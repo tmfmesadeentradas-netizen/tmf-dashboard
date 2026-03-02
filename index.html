@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resumen Diario – Tribunal de Faltas</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primario:   #1a3a5c;
@@ -17,6 +18,7 @@
             --texto:      #2c3e50;
             --suave:      #7f8c8d;
             --transito:   #2e6da4;
+            --transito-sab: #1a5276;
             --defensa:    #6c3483;
             --catastro:   #1a7a4a;
             --salud:      #1a8a6c;
@@ -25,347 +27,229 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--fondo);
-            color: var(--texto);
-            font-size: 15px;
-        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--fondo); color: var(--texto); font-size: 15px; }
 
-        /* ---- LOGIN ---- */
+        /* LOGIN */
         #pantalla-login {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(135deg, var(--primario), var(--secundario));
         }
-
         .login-box {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
+            background: white; border-radius: 12px; padding: 40px;
+            text-align: center; max-width: 400px; width: 90%;
             box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         }
-
         .login-box .logo { font-size: 52px; margin-bottom: 12px; }
         .login-box h1 { font-size: 22px; color: var(--primario); margin-bottom: 6px; }
-        .login-box p { color: var(--suave); font-size: 14px; margin-bottom: 28px; }
-
+        .login-box p  { color: var(--suave); font-size: 14px; margin-bottom: 8px; }
         .error-acceso {
-            display: none;
-            background: #fdecea;
-            color: #c0392b;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-top: 16px;
-            font-size: 13px;
+            display:none; background:#fdecea; color:#c0392b;
+            border-radius:8px; padding:12px 16px; margin-top:16px; font-size:13px;
         }
 
-        /* ---- APP ---- */
-        #pantalla-app { display: none; }
+        /* APP */
+        #pantalla-app { display: none; min-height: 100vh; }
 
         header {
-            background: var(--primario);
-            color: white;
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: var(--primario); color: white;
+            padding: 12px 20px; display: flex; align-items: center;
+            justify-content: space-between; position: sticky; top: 0; z-index: 100;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
-
-        header .titulo { display: flex; align-items: center; gap: 12px; }
-        header .titulo h1 { font-size: 16px; font-weight: 700; }
-        header .titulo p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
-
-        .usuario-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-        }
-
-        .usuario-info img {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
+        .header-titulo { display: flex; align-items: center; gap: 10px; }
+        .header-titulo h1 { font-size: 15px; font-weight: 700; }
+        .header-titulo p  { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+        .usuario-info { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .usuario-info img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); }
+        .usuario-nombre { display: none; }
         .btn-salir {
-            background: rgba(255,255,255,0.15);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
         }
 
-        .contenido { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .contenido { padding: 16px; max-width: 1300px; margin: 0 auto; }
 
-        /* ---- BARRA FECHA ---- */
+        /* BARRA FECHA */
         .fecha-bar {
-            background: white;
-            border-radius: 10px;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            flex-wrap: wrap;
+            background: white; border-radius: 10px; padding: 12px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-wrap: wrap;
         }
-
-        .fecha-bar label { font-size: 11px; font-weight: 700; color: var(--suave); text-transform: uppercase; display: block; margin-bottom: 3px; }
-        .fecha-bar input[type="date"] { border: 1.5px solid var(--borde); border-radius: 6px; padding: 7px 10px; font-size: 14px; font-weight: 600; color: var(--primario); }
-        .fecha-bar strong { font-size: 15px; color: var(--primario); }
+        .fecha-bar label { font-size: 11px; font-weight: 700; color: var(--suave); text-transform: uppercase; display: block; margin-bottom: 2px; }
+        .fecha-bar input[type="date"] { border: 1.5px solid var(--borde); border-radius: 6px; padding: 6px 10px; font-size: 14px; font-weight: 600; color: var(--primario); }
+        .fecha-bar strong { font-size: 14px; color: var(--primario); }
 
         .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: none;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+            padding: 7px 14px; border-radius: 6px; border: none; font-size: 13px;
+            font-weight: 600; cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-
         .btn-hoy { background: var(--acento); color: white; margin-left: auto; }
         .btn-nav { background: var(--fondo); color: var(--texto); border: 1.5px solid var(--borde); }
         .btn-nav:hover { border-color: var(--secundario); color: var(--secundario); }
 
-        /* ---- ESTADO MESAS ---- */
-        .estado-mesas {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+        /* EXPORT BAR */
+        .export-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .btn-exp {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 7px 12px; border-radius: 6px; border: 1.5px solid;
+            font-size: 13px; font-weight: 600; cursor: pointer; background: white;
+            font-family: inherit; transition: all 0.15s;
         }
+        .btn-exp.imp  { border-color: var(--primario); color: var(--primario); }
+        .btn-exp.imp:hover  { background: var(--primario); color: white; }
+        .btn-exp.pdf  { border-color: #c0392b; color: #c0392b; }
+        .btn-exp.pdf:hover  { background: #c0392b; color: white; }
+        .btn-exp.xls  { border-color: #27ae60; color: #27ae60; }
+        .btn-exp.xls:hover  { background: #27ae60; color: white; }
 
+        /* ESTADO MESAS */
+        .estado-mesas { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
         .estado-chip {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            border-radius: 20px;
-            background: white;
-            border: 2px solid;
-            font-size: 13px;
-            font-weight: 600;
+            display: flex; align-items: center; gap: 7px;
+            padding: 7px 13px; border-radius: 20px; background: white;
+            border: 2px solid; font-size: 13px; font-weight: 600;
             box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
+        .dot { width: 9px; height: 9px; border-radius: 50%; }
 
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        /* CARD */
+        .card { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; overflow: hidden; }
+        .card-header { padding: 14px 18px; border-bottom: 1px solid var(--borde); font-size: 15px; font-weight: 700; color: var(--primario); }
 
-        /* ---- CARD ---- */
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            margin-bottom: 16px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 14px 20px;
-            border-bottom: 1px solid var(--borde);
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--primario);
-        }
-
-        .card-body { padding: 0; }
-
-        /* ---- TABLA COMPARATIVA ---- */
-        .tabla-wrapper { overflow-x: auto; max-height: 600px; overflow-y: auto; }
-
-        .tabla-resumen { width: 100%; border-collapse: collapse; font-size: 14px; }
-
+        /* TABLA COMPARATIVA */
+        .tabla-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tabla-resumen { width: 100%; border-collapse: collapse; font-size: 15px; }
         .tabla-resumen thead { position: sticky; top: 0; z-index: 5; }
-
         .tabla-resumen th {
-            padding: 13px 16px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
+            padding: 13px 14px; text-align: center;
+            font-size: 13px; font-weight: 700; color: white;
         }
-
-        .tabla-resumen th.col-label { text-align: left; min-width: 190px; background: #0c1f35; }
-        .tabla-resumen th.th-transito { background: var(--transito); }
-        .tabla-resumen th.th-defensa  { background: var(--defensa); }
-        .tabla-resumen th.th-catastro { background: var(--catastro); }
-        .tabla-resumen th.th-salud    { background: var(--salud); }
-
+        .tabla-resumen th.col-label { text-align: left; min-width: 190px; background: #0c1f35; font-size: 13px; }
+        .tabla-resumen th.th-ts  { background: var(--transito); }
+        .tabla-resumen th.th-tsab{ background: var(--transito-sab); }
+        .tabla-resumen th.th-def { background: var(--defensa); }
+        .tabla-resumen th.th-cat { background: var(--catastro); }
+        .tabla-resumen th.th-sal { background: var(--salud); }
         .tabla-resumen td {
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--borde);
-            text-align: center;
-            font-size: 14px;
+            padding: 10px 14px; border-bottom: 1px solid var(--borde);
+            text-align: center; font-size: 15px;
         }
-
         .tabla-resumen td.col-label {
-            text-align: left;
-            font-size: 13px;
-            font-weight: 600;
-            background: #f8fafc;
-            border-right: 2px solid var(--borde);
+            text-align: left; font-size: 14px; font-weight: 600;
+            background: #f8fafc; border-right: 2px solid var(--borde);
         }
-
-        .tabla-resumen td.sub { padding-left: 28px; color: var(--suave); font-size: 12px; }
-
+        .tabla-resumen td.sub { padding-left: 28px; color: var(--suave); font-size: 13px; }
         .tabla-resumen .sec-titulo td {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 7px 16px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; padding: 7px 14px;
         }
-
         .sec-actas td      { background: #dbeafe; color: #1e40af; }
         .sec-secuestros td { background: #fee2e2; color: #991b1b; }
         .sec-atencion td   { background: #d1fae5; color: #065f46; }
         .sec-sistemas td   { background: #ede9fe; color: #4c1d95; }
         .sec-juzgados td   { background: #fef3c7; color: #92400e; }
-
-        .tabla-resumen tr:hover td         { background: #f0f7ff; }
+        .tabla-resumen tr:hover td { background: #f0f7ff; }
         .tabla-resumen tr:hover td.col-label { background: #e4eef9; }
         .sec-titulo:hover td { background: inherit !important; }
+        .vg { font-size: 20px; font-weight: 700; color: var(--primario); }
+        .sd { color: #bdc3c7; font-size: 13px; }
 
-        .val-grande { font-size: 18px; font-weight: 700; color: var(--primario); }
-        .sin-dato   { color: #bdc3c7; font-size: 12px; }
-
-        /* ---- TMF SECTION ---- */
+        /* TMF */
         .tmf-header {
             background: linear-gradient(135deg, #b7360e, #e74c3c);
-            color: white;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            color: white; padding: 16px 20px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
         }
-
-        .tmf-header h2 { font-size: 16px; color: white; }
+        .tmf-header h2 { font-size: 17px; color: white; }
         .tmf-header p  { font-size: 12px; opacity: 0.8; margin-top: 3px; }
-
-        .tmf-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
-            padding: 20px;
-        }
-
-        .tmf-bloque {
-            background: var(--fondo);
-            border-radius: 8px;
-            padding: 14px;
-        }
-
-        .tmf-bloque-titulo {
-            font-size: 11px;
-            font-weight: 700;
-            color: #b7360e;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .tmf-fila {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--borde);
-            font-size: 13px;
-        }
-
+        .tmf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; padding: 18px; }
+        .tmf-bloque { background: var(--fondo); border-radius: 8px; padding: 14px; }
+        .tmf-bloque-titulo { font-size: 11px; font-weight: 700; color: #b7360e; text-transform: uppercase; margin-bottom: 10px; }
+        .tmf-fila { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--borde); font-size: 13px; }
         .tmf-fila:last-child { border-bottom: none; }
         .tmf-fila .lbl { color: var(--suave); }
-        .tmf-fila .num { font-size: 18px; font-weight: 700; color: var(--primario); }
-
-        .tmf-juzgados {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            padding: 0 20px 20px;
-        }
-
-        .juz-box {
-            background: var(--fondo);
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;
-        }
-
-        .juz-box .juz-titulo { font-size: 11px; font-weight: 700; color: var(--suave); margin-bottom: 8px; }
-        .juz-numeros { display: flex; gap: 10px; justify-content: center; align-items: center; }
-        .juz-num { font-size: 22px; font-weight: 700; }
+        .tmf-fila .num { font-size: 20px; font-weight: 700; color: var(--primario); }
+        .tmf-juzgados { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 18px 18px; }
+        .juz-box { background: var(--fondo); border-radius: 8px; padding: 14px; text-align: center; }
+        .juz-titulo { font-size: 12px; font-weight: 700; color: var(--suave); margin-bottom: 10px; }
+        .juz-numeros { display: flex; gap: 12px; justify-content: center; align-items: center; }
+        .juz-num { font-size: 24px; font-weight: 700; }
         .juz-num.ing  { color: var(--primario); }
         .juz-num.reas { color: var(--acento); }
-        .juz-lbl { font-size: 10px; color: var(--suave); }
-        .juz-sep { border-left: 1px solid var(--borde); height: 30px; }
+        .juz-lbl { font-size: 11px; color: var(--suave); }
+        .juz-sep { border-left: 1px solid var(--borde); height: 32px; }
 
-        /* ---- LOADING / ERROR ---- */
-        #loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--suave);
-            font-size: 16px;
-        }
-
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid var(--borde);
-            border-top-color: var(--secundario);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 16px;
-        }
-
+        /* LOADING */
+        #loading { text-align: center; padding: 60px 20px; color: var(--suave); font-size: 16px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--borde); border-top-color: var(--secundario); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-
-        .alert-info    { background: #eaf4fb; color: #1a5276; border-left: 4px solid var(--secundario); }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
         .alert-warning { background: #fef9e7; color: #9a7d0a; border-left: 4px solid var(--acento); }
 
-        /* ---- RESPONSIVE ---- */
-        @media (max-width: 600px) {
-            .contenido { padding: 12px; }
-            .tmf-grid { grid-template-columns: 1fr 1fr; }
-            .tmf-juzgados { grid-template-columns: 1fr; }
-            header .titulo h1 { font-size: 13px; }
+        /* FOOTER */
+        footer {
+            text-align: center; padding: 16px 20px;
+            color: var(--suave); font-size: 12px;
+            border-top: 1px solid var(--borde); margin-top: 8px;
+            background: white;
+        }
+        footer strong { color: var(--primario); }
+
+        /* PRINT */
+        @media print {
+            .export-bar, .btn-salir, header .usuario-info, .btn-nav, .btn-hoy { display: none !important; }
+            .tabla-wrapper { overflow: visible !important; }
+            .tabla-resumen thead { position: static !important; }
+            body { font-size: 11px; }
+            .tabla-resumen th { font-size: 10px; padding: 5px 7px; }
+            .tabla-resumen td { font-size: 11px; padding: 5px 7px; }
+            .vg { font-size: 13px !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            @page { margin: 1cm; }
+        }
+
+        /* RESPONSIVE MOBILE */
+        @media (max-width: 640px) {
+            .contenido { padding: 10px; }
+            .header-titulo h1 { font-size: 13px; }
+            .header-titulo p  { display: none; }
+            .usuario-nombre { display: none !important; }
+
+            .fecha-bar { gap: 8px; padding: 10px 12px; }
+            .fecha-bar strong { font-size: 13px; }
+            .fecha-bar input[type="date"] { font-size: 13px; }
+
+            .export-bar .btn-exp span { display: none; }
+            .btn-exp { padding: 7px 10px; }
+
+            .estado-chip { font-size: 12px; padding: 6px 10px; }
+
+            /* Tabla - scroll horizontal en mobile */
+            .tabla-wrapper { border: 1px solid var(--borde); border-radius: 8px; }
+            .tabla-resumen th { font-size: 11px; padding: 9px 8px; white-space: nowrap; }
+            .tabla-resumen td { font-size: 13px; padding: 8px; }
+            .tabla-resumen td.col-label { font-size: 12px; min-width: 140px; }
+            .vg { font-size: 16px !important; }
+
+            /* TMF mobile */
+            .tmf-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
+            .tmf-juzgados { grid-template-columns: 1fr; padding: 0 12px 12px; }
+            .tmf-fila .num { font-size: 17px; }
+            .juz-num { font-size: 20px; }
         }
     </style>
 </head>
 <body>
 
-<!-- ================================================================
-     PANTALLA DE LOGIN
-     ================================================================ -->
+<!-- LOGIN -->
 <div id="pantalla-login">
     <div class="login-box">
         <div class="logo">⚖️</div>
         <h1>Tribunal de Faltas</h1>
         <p>Mesas de Entrada · Resumen Diario</p>
         <p style="font-size:12px;color:#aaa;margin-bottom:20px;">Municipalidad de San Miguel de Tucumán</p>
-
         <div id="google-btn"></div>
-
         <div class="error-acceso" id="error-acceso">
             ⛔ Tu cuenta no tiene acceso a este sistema.<br>
             Contactá al administrador para solicitar acceso.
@@ -373,13 +257,11 @@
     </div>
 </div>
 
-<!-- ================================================================
-     PANTALLA PRINCIPAL
-     ================================================================ -->
+<!-- APP -->
 <div id="pantalla-app">
     <header>
-        <div class="titulo">
-            <span style="font-size:24px;">⚖️</span>
+        <div class="header-titulo">
+            <span style="font-size:22px;">⚖️</span>
             <div>
                 <h1>Tribunal de Faltas – Mesas de Entrada</h1>
                 <p>Resumen Diario · Municipalidad de San Miguel de Tucumán</p>
@@ -387,77 +269,39 @@
         </div>
         <div class="usuario-info">
             <img id="user-avatar" src="" alt="">
-            <span id="user-name"></span>
+            <span id="user-name" class="usuario-nombre"></span>
             <button class="btn-salir" onclick="cerrarSesion()">Salir</button>
         </div>
     </header>
 
     <div class="contenido">
-        <div id="loading">
-            <div class="spinner"></div>
-            Cargando datos...
-        </div>
+        <div id="loading"><div class="spinner"></div>Cargando datos...</div>
         <div id="contenido-datos" style="display:none;"></div>
     </div>
 </div>
 
 <script>
-// ================================================================
-// CONFIGURACIÓN
-// ================================================================
-const GOOGLE_CLIENT_ID   = '1083295097277-qb6ug0psqmkof8filklhv4rifdphiitg.apps.googleusercontent.com';
-const SPREADSHEET_ID     = '1HoHYklZlysMh77WybuZc_28QyczXrfq923J2JxfYtZc';
-const API_KEY            = 'AIzaSyATf67anKIAFp8WRohpyb9vsIpe3-0jFIo';
-
-// Emails habilitados para ver el dashboard
-// Agregar los emails de los funcionarios autorizados
-const EMAILS_PERMITIDOS  = [
-    // 'directora@muni.gob.ar',
-    // 'funcionario@muni.gob.ar',
-];
+const GOOGLE_CLIENT_ID = '1083295097277-qb6ug0psqmkof8filklhv4rifdphiitg.apps.googleusercontent.com';
+const SPREADSHEET_ID   = '1HoHYklZlysMh77WybuZc_28QyczXrfq923J2JxfYtZc';
+const API_KEY          = 'AIzaSyATf67anKIAFp8WRohpyb9vsIpe3-0jFIo';
+const EMAILS_PERMITIDOS = [];
 
 let fechaActual = hoy();
 
-// ================================================================
-// GOOGLE SIGN IN
-// ================================================================
 window.onload = function() {
-    google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: manejarLogin,
-        auto_select: false,
-    });
-
-    google.accounts.id.renderButton(
-        document.getElementById('google-btn'),
-        { theme: 'outline', size: 'large', text: 'signin_with', locale: 'es', width: 300 }
-    );
-
-    // Si hay sesión guardada, restaurar
+    google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: manejarLogin, auto_select: false });
+    google.accounts.id.renderButton(document.getElementById('google-btn'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'es', width: 300 });
     const sesion = sessionStorage.getItem('tmf_user');
-    if (sesion) {
-        const usuario = JSON.parse(sesion);
-        mostrarApp(usuario);
-        cargarDatos(fechaActual);
-    }
+    if (sesion) { const u = JSON.parse(sesion); mostrarApp(u); cargarDatos(fechaActual); }
 };
 
 function manejarLogin(response) {
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
-    const email   = payload.email;
-
-    // Verificar si el email está autorizado
+    const email = payload.email;
     if (EMAILS_PERMITIDOS.length > 0 && !EMAILS_PERMITIDOS.includes(email)) {
-        document.getElementById('error-acceso').style.display = 'block';
-        return;
+        document.getElementById('error-acceso').style.display = 'block'; return;
     }
-
-    const usuario = {
-        email:  email,
-        nombre: payload.name,
-        avatar: payload.picture,
-    };
-
+    const usuario = { email, nombre: payload.name, avatar: payload.picture };
     sessionStorage.setItem('tmf_user', JSON.stringify(usuario));
     mostrarApp(usuario);
     cargarDatos(fechaActual);
@@ -476,126 +320,97 @@ function cerrarSesion() {
     location.reload();
 }
 
-// ================================================================
-// CARGA DE DATOS DESDE GOOGLE SHEETS
-// ================================================================
 async function cargarDatos(fecha) {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('contenido-datos').style.display = 'none';
-
     const nombreHoja = formatearFechaHoja(fecha);
-
     try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(nombreHoja)}!A1:F100?key=${API_KEY}`;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(nombreHoja)}!A1:G100?key=${API_KEY}`;
         const resp = await fetch(url);
-
-        if (!resp.ok) {
-            mostrarSinDatos(fecha);
-            return;
-        }
-
+        if (!resp.ok) { mostrarSinDatos(fecha); return; }
         const data = await resp.json();
-        if (!data.values || data.values.length < 5) {
-            mostrarSinDatos(fecha);
-            return;
-        }
-
+        if (!data.values || data.values.length < 5) { mostrarSinDatos(fecha); return; }
         renderizarDatos(data.values, fecha);
-
-    } catch (e) {
-        mostrarSinDatos(fecha);
-    }
+    } catch(e) { mostrarSinDatos(fecha); }
 }
 
 function formatearFechaHoja(fecha) {
-    const [y, m, d] = fecha.split('-');
-    return `${d}/${m}/${y}`;
+    const [y,m,d] = fecha.split('-'); return `${d}/${m}/${y}`;
 }
 
 function formatearFechaLegible(fecha) {
-    const dias   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-    const meses  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const dias  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const f = new Date(fecha + 'T12:00:00');
     return `${dias[f.getDay()]} ${f.getDate()} de ${meses[f.getMonth()]} de ${f.getFullYear()}`;
 }
 
-function hoy() {
-    return new Date().toISOString().split('T')[0];
-}
+function hoy() { return new Date().toISOString().split('T')[0]; }
 
-// ================================================================
-// PARSEAR DATOS DEL SHEET
-// ================================================================
+// Col indices: A=0 Indicador, B=1 Tránsito Semana, C=2 Tránsito Sábado, D=3 Defensa, E=4 Catastro, F=5 Salud, G=6 Total
 function parsearDatos(filas) {
     const datos = {};
     filas.forEach(fila => {
-        const indicador = (fila[0] || '').trim();
-        if (!indicador || indicador.startsWith('---') || indicador.startsWith('===') || indicador === 'INDICADOR') return;
-        datos[indicador] = {
-            transito:  fila[1] || '—',
-            defensa:   fila[2] || '—',
-            catastro:  fila[3] || '—',
-            salud:     fila[4] || '—',
-            total:     fila[5] || '',
-            cantidad:  fila[1] || '0', // para TMF
+        const ind = (fila[0] || '').trim();
+        if (!ind || ind.startsWith('---') || ind.startsWith('===') || ind === 'INDICADOR') return;
+        datos[ind] = {
+            ts:  fila[1] || '—',
+            tsab:fila[2] || '—',
+            def: fila[3] || '—',
+            cat: fila[4] || '—',
+            sal: fila[5] || '—',
+            tot: fila[6] || '',
+            cant:fila[1] || '0',
         };
     });
     return datos;
 }
 
 function v(datos, key, col) {
-    if (!datos[key]) return '<span class="sin-dato">—</span>';
+    if (!datos[key]) return '<span class="sd">—</span>';
     const val = datos[key][col];
-    if (!val || val === '—' || val === '0') return '<span class="sin-dato">—</span>';
+    if (!val || val === '—' || val === '0') return '<span class="sd">—</span>';
     return val;
 }
 
 function vg(datos, key, col) {
-    if (!datos[key]) return '<span class="sin-dato">—</span>';
+    if (!datos[key]) return '<span class="sd">—</span>';
     const val = datos[key][col];
-    if (!val || val === '—' || val === '0') return '<span class="sin-dato">—</span>';
-    return `<span class="val-grande">${val}</span>`;
+    if (!val || val === '—' || val === '0') return '<span class="sd">—</span>';
+    return `<span class="vg">${val}</span>`;
 }
 
 function vc(datos, key) {
     if (!datos[key]) return '0';
-    return datos[key]['cantidad'] || '0';
+    return datos[key]['cant'] || '0';
 }
 
-// ================================================================
-// RENDERIZAR DASHBOARD
-// ================================================================
 function renderizarDatos(filas, fecha) {
     const datos = parsearDatos(filas);
-    const esSab = new Date(fecha + 'T12:00:00').getDay() === 6;
 
-    // Detectar estado de mesas
     const estados = {
-        'Tránsito':     datos['Total actas ingresadas']?.transito !== undefined,
-        'TMF':          datos['Actas ingresadas'] !== undefined,
-        'Def. Civil':   datos['Total actas ingresadas']?.defensa !== undefined,
-        'Catastro':     datos['Total actas ingresadas']?.catastro !== undefined,
-        'Salud Amb.':   datos['Total actas ingresadas']?.salud !== undefined,
+        '🚗 Tránsito': datos['Total actas ingresadas']?.ts !== '—',
+        '🚔 Tr. Sábado': datos['Total actas ingresadas']?.tsab !== '—',
+        '📋 TMF':       datos['Actas ingresadas'] !== undefined,
+        '🛡️ Def. Civil':datos['Total actas ingresadas']?.def !== '—',
+        '🏠 Catastro':  datos['Total actas ingresadas']?.cat !== '—',
+        '🌿 Salud Amb.':datos['Total actas ingresadas']?.sal !== '—',
     };
-
     const colores = {
-        'Tránsito':   '--transito',
-        'TMF':        '--tmf',
-        'Def. Civil': '--defensa',
-        'Catastro':   '--catastro',
-        'Salud Amb.': '--salud',
+        '🚗 Tránsito':   '--transito',
+        '🚔 Tr. Sábado': '--transito-sab',
+        '📋 TMF':        '--tmf',
+        '🛡️ Def. Civil': '--defensa',
+        '🏠 Catastro':   '--catastro',
+        '🌿 Salud Amb.': '--salud',
     };
 
-    let html = '';
-
-    // Barra de fecha
-    html += `
+    let html = `
     <div class="fecha-bar">
         <button class="btn btn-nav" onclick="cambiarFecha(-1)">◀ Anterior</button>
         <div>
             <label>Fecha</label>
-            <input type="date" id="input-fecha" value="${fecha}" max="${hoy()}"
-                   onchange="cambiarFechaDirecta(this.value)">
+            <input type="date" id="input-fecha" value="${fecha}" max="${hoy()}" onchange="cambiarFechaDirecta(this.value)">
         </div>
         <div>
             <label>Día</label>
@@ -603,207 +418,192 @@ function renderizarDatos(filas, fecha) {
         </div>
         ${fecha !== hoy() ? `<button class="btn btn-nav" onclick="cambiarFecha(1)">Siguiente ▶</button>` : ''}
         <button class="btn btn-hoy" onclick="cambiarFechaDirecta('${hoy()}')">📅 Hoy</button>
-    </div>`;
+    </div>
 
-    // Estado de mesas
-    html += `<div class="estado-mesas">`;
+    <div class="export-bar">
+        <button class="btn-exp imp" onclick="window.print()">🖨️ <span>Imprimir</span></button>
+        <button class="btn-exp pdf" onclick="window.print()">📄 <span>PDF</span></button>
+        <button class="btn-exp xls" onclick="exportarExcel('${fecha}')">📊 <span>Excel</span></button>
+    </div>
+
+    <div class="estado-mesas">`;
+
     for (const [nombre, cargado] of Object.entries(estados)) {
         const color = `var(${colores[nombre]})`;
-        html += `
-        <div class="estado-chip" style="border-color:${cargado ? color : '#f39c12'}; color:${cargado ? color : '#e67e22'}">
+        html += `<div class="estado-chip" style="border-color:${cargado ? color : '#f39c12'};color:${cargado ? color : '#e67e22'}">
             <div class="dot" style="background:${cargado ? color : '#f39c12'}"></div>
             ${nombre}
             <span style="font-size:11px;font-weight:400;color:${cargado ? '#666' : '#e67e22'}">${cargado ? 'Con datos' : 'Sin cargar'}</span>
         </div>`;
     }
-    html += `</div>`;
+    html += `</div>
 
-    // Tabla comparativa
-    html += `
     <div class="card">
         <div class="card-header">🏛️ Mesas de Entrada — Comparativo del Día</div>
-        <div class="card-body">
         <div class="tabla-wrapper">
-        <table class="tabla-resumen">
-            <thead>
-                <tr>
-                    <th class="col-label">Indicador</th>
-                    <th class="th-transito">🚗 Tránsito<br><small style="font-weight:400;opacity:0.85;">${esSab ? 'Sábado' : 'Lunes–Viernes'}</small></th>
-                    <th class="th-defensa">🛡️ Defensa Civil</th>
-                    <th class="th-catastro">🏠 Catastro</th>
-                    <th class="th-salud">🌿 Salud Ambiental</th>
-                </tr>
-            </thead>
+        <table class="tabla-resumen" id="tabla-exportar">
+            <thead><tr>
+                <th class="col-label">Indicador</th>
+                <th class="th-ts">🚗 Tránsito Semana<br><small style="font-weight:400;opacity:0.85;">Lunes–Viernes</small></th>
+                <th class="th-tsab">🚔 Tránsito Sábado</th>
+                <th class="th-def">🛡️ Defensa Civil</th>
+                <th class="th-cat">🏠 Catastro</th>
+                <th class="th-sal">🌿 Salud Ambiental</th>
+            </tr></thead>
             <tbody>
-                <tr class="sec-titulo sec-actas"><td colspan="5">📄 ACTAS</td></tr>
-                <tr>
-                    <td class="col-label">Total actas ingresadas</td>
-                    <td>${vg(datos,'Total actas ingresadas','transito')}</td>
-                    <td>${vg(datos,'Total actas ingresadas','defensa')}</td>
-                    <td>${vg(datos,'Total actas ingresadas','catastro')}</td>
-                    <td>${vg(datos,'Total actas ingresadas','salud')}</td>
-                </tr>
-                <tr>
-                    <td class="col-label sub">↳ Turno Mañana</td>
-                    <td>${v(datos,'Turno Mañana','transito')}</td>
-                    <td colspan="3" class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label sub">↳ Turno Tarde</td>
-                    <td>${v(datos,'Turno Tarde','transito')}</td>
-                    <td colspan="3" class="sin-dato">—</td>
-                </tr>
 
-                <tr class="sec-titulo sec-secuestros"><td colspan="5">🔒 SECUESTROS / CLAUSURAS</td></tr>
-                <tr>
-                    <td class="col-label">Con secuestro</td>
-                    <td>${vg(datos,'Con secuestro','transito')}</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td><td class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label">Sin secuestro</td>
-                    <td>${v(datos,'Sin secuestro','transito')}</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td><td class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label">Clausura / Decomiso</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td><td class="sin-dato">—</td>
-                    <td>${v(datos,'Clausura / Decomiso','salud')}</td>
-                </tr>
+            <tr class="sec-titulo sec-actas"><td colspan="6">📄 ACTAS</td></tr>
+            <tr>
+                <td class="col-label">Total actas ingresadas</td>
+                <td>${vg(datos,'Total actas ingresadas','ts')}</td>
+                <td>${vg(datos,'Total actas ingresadas','tsab')}</td>
+                <td>${vg(datos,'Total actas ingresadas','def')}</td>
+                <td>${vg(datos,'Total actas ingresadas','cat')}</td>
+                <td>${vg(datos,'Total actas ingresadas','sal')}</td>
+            </tr>
+            <tr>
+                <td class="col-label sub">↳ Turno Mañana</td>
+                <td>${v(datos,'Turno Mañana','ts')}</td>
+                <td class="sd">—</td><td colspan="3" class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label sub">↳ Turno Tarde</td>
+                <td>${v(datos,'Turno Tarde','ts')}</td>
+                <td class="sd">—</td><td colspan="3" class="sd">—</td>
+            </tr>
 
-                <tr class="sec-titulo sec-atencion"><td colspan="5">👥 ATENCIÓN AL PÚBLICO</td></tr>
-                <tr>
-                    <td class="col-label">Personas atendidas</td>
-                    <td>${vg(datos,'Personas atendidas','transito')}</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td><td class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label sub">↳ Turno Mañana</td>
-                    <td>${v(datos,'  Turno Mañana','transito')}</td>
-                    <td colspan="3" class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label sub">↳ Turno Tarde</td>
-                    <td>${v(datos,'  Turno Tarde','transito')}</td>
-                    <td colspan="3" class="sin-dato">—</td>
-                </tr>
-                <tr>
-                    <td class="col-label">Consultas</td>
-                    <td>${v(datos,'Consultas','transito')}</td>
-                    <td class="sin-dato">—</td>
-                    <td>${v(datos,'Consultas','catastro')}</td>
-                    <td class="sin-dato">—</td>
-                </tr>
+            <tr class="sec-titulo sec-secuestros"><td colspan="6">🔒 SECUESTROS / CLAUSURAS</td></tr>
+            <tr>
+                <td class="col-label">Con secuestro</td>
+                <td>${vg(datos,'Con secuestro','ts')}</td>
+                <td>${v(datos,'Con secuestro','tsab')}</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label">Sin secuestro</td>
+                <td>${v(datos,'Sin secuestro','ts')}</td>
+                <td>${v(datos,'Sin secuestro','tsab')}</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label">Vehículos liberados</td>
+                <td class="sd">—</td>
+                <td>${v(datos,'Vehículos liberados','tsab')}</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label">Clausura / Decomiso</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+                <td>${v(datos,'Clausura / Decomiso','sal')}</td>
+            </tr>
 
-                <tr class="sec-titulo sec-sistemas"><td colspan="5">💻 SISTEMAS CIT / SAE</td></tr>
-                <tr>
-                    <td class="col-label">Sistema CIT</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td>
-                    <td>${v(datos,'Sistema CIT','catastro')}</td>
-                    <td>${v(datos,'Sistema CIT','salud')}</td>
-                </tr>
-                <tr>
-                    <td class="col-label">Sistema SAE</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td>
-                    <td>${v(datos,'Sistema SAE','catastro')}</td>
-                    <td>${v(datos,'Sistema SAE','salud')}</td>
-                </tr>
-                <tr>
-                    <td class="col-label">Docs. digitalizados</td>
-                    <td class="sin-dato">—</td><td class="sin-dato">—</td>
-                    <td>${v(datos,'Docs digitalizados','catastro')}</td>
-                    <td class="sin-dato">—</td>
-                </tr>
+            <tr class="sec-titulo sec-atencion"><td colspan="6">👥 ATENCIÓN AL PÚBLICO</td></tr>
+            <tr>
+                <td class="col-label">Personas atendidas</td>
+                <td>${vg(datos,'Personas atendidas','ts')}</td>
+                <td>${v(datos,'Personas atendidas','tsab')}</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label sub">↳ Turno Mañana</td>
+                <td>${v(datos,'  Turno Mañana','ts')}</td>
+                <td class="sd">—</td><td colspan="3" class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label sub">↳ Turno Tarde</td>
+                <td>${v(datos,'  Turno Tarde','ts')}</td>
+                <td class="sd">—</td><td colspan="3" class="sd">—</td>
+            </tr>
+            <tr>
+                <td class="col-label">Consultas</td>
+                <td>${v(datos,'Consultas','ts')}</td>
+                <td class="sd">—</td><td class="sd">—</td>
+                <td>${v(datos,'Consultas','cat')}</td>
+                <td class="sd">—</td>
+            </tr>
 
-                <tr class="sec-titulo sec-juzgados"><td colspan="5">🏛️ DISTRIBUCIÓN POR JUZGADO</td></tr>
-                ${['I','II','III','IV','V','VI','VII','VIII','IX'].map(j => `
-                <tr>
-                    <td class="col-label sub">Juzgado ${j}</td>
-                    <td>${v(datos,`Juzgado ${j}`,'transito')}</td>
-                    <td>${v(datos,`Juzgado ${j}`,'defensa')}</td>
-                    <td>${v(datos,`Juzgado ${j}`,'catastro')}</td>
-                    <td class="sin-dato">—</td>
-                </tr>`).join('')}
+            <tr class="sec-titulo sec-sistemas"><td colspan="6">💻 SISTEMAS CIT / SAE</td></tr>
+            <tr>
+                <td class="col-label">Sistema CIT</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+                <td>${v(datos,'Sistema CIT','cat')}</td>
+                <td>${v(datos,'Sistema CIT','sal')}</td>
+            </tr>
+            <tr>
+                <td class="col-label">Sistema SAE</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+                <td>${v(datos,'Sistema SAE','cat')}</td>
+                <td>${v(datos,'Sistema SAE','sal')}</td>
+            </tr>
+            <tr>
+                <td class="col-label">Docs. digitalizados</td>
+                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
+                <td>${v(datos,'Docs digitalizados','cat')}</td>
+                <td class="sd">—</td>
+            </tr>
+
+            <tr class="sec-titulo sec-juzgados"><td colspan="6">🏛️ DISTRIBUCIÓN POR JUZGADO</td></tr>
+            ${['I','II','III','IV','V','VI','VII','VIII','IX'].map(j => `
+            <tr>
+                <td class="col-label sub">Juzgado ${j}</td>
+                <td>${v(datos,`Juzgado ${j}`,'ts')}</td>
+                <td class="sd">—</td>
+                <td>${v(datos,`Juzgado ${j}`,'def')}</td>
+                <td>${v(datos,`Juzgado ${j}`,'cat')}</td>
+                <td class="sd">—</td>
+            </tr>`).join('')}
+
             </tbody>
         </table>
         </div>
-        </div>
-    </div>`;
+    </div>
 
-    // Sección TMF
-    html += `
+    <!-- TMF -->
     <div class="card">
         <div class="tmf-header">
             <div>
                 <h2>📋 Mesa TMF</h2>
                 <p>Trámites · Libre Deuda · Cupones · Atención</p>
             </div>
+            <span style="background:rgba(255,255,255,0.2);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;">
+                ${datos['Actas ingresadas'] ? '✅ Con datos' : '⏳ Sin cargar'}
+            </span>
         </div>
         <div class="tmf-grid">`;
 
-    const bloquesTMF = [
-        { titulo: '📄 Actas', items: [
-            ['Ingresadas',  'Actas ingresadas'],
-            ['Reasignadas', 'Actas reasignadas'],
-        ]},
-        { titulo: '📜 Libre Deuda', items: [
-            ['Automotor gen.',  'Libre deuda autom. gen.'],
-            ['Automotor ret.',  'Libre deuda autom. ret.'],
-            ['Catastro ret.',   'Libre deuda catastro ret.'],
-        ]},
-        { titulo: '💳 Cupones', items: [
-            ['Generados', 'Cupones generados'],
-            ['Recibidos', 'Cupones recibidos'],
-            ['Manual',    'Cupones manual'],
-        ]},
-        { titulo: '👥 Atención', items: [
-            ['Personas atendidas', 'Personas atendidas'],
-            ['Consultas',          'Consultas'],
-            ['Mails OGV',          'Mails OGV'],
-        ]},
+    const bloques = [
+        { titulo: '📄 Actas', items: [['Ingresadas','Actas ingresadas'],['Reasignadas','Actas reasignadas']] },
+        { titulo: '📜 Libre Deuda', items: [['Automotor gen.','Libre deuda autom. gen.'],['Automotor ret.','Libre deuda autom. ret.'],['Catastro ret.','Libre deuda catastro ret.']] },
+        { titulo: '💳 Cupones', items: [['Generados','Cupones generados'],['Recibidos','Cupones recibidos'],['Manual','Cupones manual']] },
+        { titulo: '👥 Atención', items: [['Personas atendidas','Personas atendidas'],['Consultas','Consultas'],['Mails OGV','Mails OGV']] },
     ];
 
-    bloquesTMF.forEach(bloque => {
-        html += `<div class="tmf-bloque"><div class="tmf-bloque-titulo">${bloque.titulo}</div>`;
-        bloque.items.forEach(([lbl, key]) => {
-            html += `
-            <div class="tmf-fila">
-                <span class="lbl">${lbl}</span>
-                <span class="num">${vc(datos, key)}</span>
-            </div>`;
+    bloques.forEach(b => {
+        html += `<div class="tmf-bloque"><div class="tmf-bloque-titulo">${b.titulo}</div>`;
+        b.items.forEach(([lbl,key]) => {
+            html += `<div class="tmf-fila"><span class="lbl">${lbl}</span><span class="num">${vc(datos,key)}</span></div>`;
         });
         html += `</div>`;
     });
 
-    html += `</div>`;
-
-    // Juzgados TMF
-    html += `<div class="tmf-juzgados">`;
+    html += `</div><div class="tmf-juzgados">`;
     ['III','V','VIII'].forEach(j => {
-        html += `
-        <div class="juz-box">
+        html += `<div class="juz-box">
             <div class="juz-titulo">JUZGADO ${j}</div>
             <div class="juz-numeros">
-                <div>
-                    <div class="juz-num ing">${vc(datos, `Juzgado ${j} ingresadas`)}</div>
-                    <div class="juz-lbl">Ingresadas</div>
-                </div>
+                <div><div class="juz-num ing">${vc(datos,`Juzgado ${j} ingresadas`)}</div><div class="juz-lbl">Ingresadas</div></div>
                 <div class="juz-sep"></div>
-                <div>
-                    <div class="juz-num reas">${vc(datos, `Juzgado ${j} reasignadas`)}</div>
-                    <div class="juz-lbl">Reasignadas</div>
-                </div>
+                <div><div class="juz-num reas">${vc(datos,`Juzgado ${j} reasignadas`)}</div><div class="juz-lbl">Reasignadas</div></div>
             </div>
         </div>`;
     });
-    html += `</div></div>`;
 
-    // Pie de página
-    html += `
-    <div style="text-align:center;padding:20px;color:var(--suave);font-size:12px;">
-        Municipalidad de San Miguel de Tucumán · Tribunal de Faltas<br>
-        Datos actualizados al momento de la última sincronización
-    </div>`;
+    html += `</div></div>
+
+    <footer>
+        ⚖️ Tribunal Municipal de Faltas · Municipalidad de San Miguel de Tucumán<br>
+        Versión 1.0 · Lanzamiento Marzo 2026 · Desarrollado por <strong>David Díaz de la Vega</strong>
+    </footer>`;
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('contenido-datos').style.display = 'block';
@@ -816,18 +616,13 @@ function mostrarSinDatos(fecha) {
     document.getElementById('contenido-datos').innerHTML = `
         <div class="fecha-bar">
             <button class="btn btn-nav" onclick="cambiarFecha(-1)">◀ Anterior</button>
-            <div>
-                <label>Fecha</label>
-                <input type="date" id="input-fecha" value="${fecha}" max="${hoy()}"
-                       onchange="cambiarFechaDirecta(this.value)">
-            </div>
+            <div><label>Fecha</label><input type="date" id="input-fecha" value="${fecha}" max="${hoy()}" onchange="cambiarFechaDirecta(this.value)"></div>
             <div><label>Día</label><strong>${formatearFechaLegible(fecha)}</strong></div>
             ${fecha !== hoy() ? `<button class="btn btn-nav" onclick="cambiarFecha(1)">Siguiente ▶</button>` : ''}
             <button class="btn btn-hoy" onclick="cambiarFechaDirecta('${hoy()}')">📅 Hoy</button>
         </div>
         <div class="alert alert-warning">
-            ⏳ No hay datos sincronizados para el ${formatearFechaLegible(fecha)}.<br>
-            <small>Las mesas deben cargar sus datos y luego sincronizar desde el sistema interno.</small>
+            ⏳ No hay datos sincronizados para el ${formatearFechaLegible(fecha)}.
         </div>`;
 }
 
@@ -835,17 +630,20 @@ function cambiarFecha(dias) {
     const f = new Date(fechaActual + 'T12:00:00');
     f.setDate(f.getDate() + dias);
     const nueva = f.toISOString().split('T')[0];
-    if (nueva <= hoy()) {
-        fechaActual = nueva;
-        cargarDatos(fechaActual);
-    }
+    if (nueva <= hoy()) { fechaActual = nueva; cargarDatos(fechaActual); }
 }
 
 function cambiarFechaDirecta(fecha) {
-    if (fecha <= hoy()) {
-        fechaActual = fecha;
-        cargarDatos(fechaActual);
-    }
+    if (fecha <= hoy()) { fechaActual = fecha; cargarDatos(fechaActual); }
+}
+
+function exportarExcel(fecha) {
+    const tabla = document.getElementById('tabla-exportar');
+    if (!tabla) return;
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(tabla);
+    XLSX.utils.book_append_sheet(wb, ws, `Resumen ${fecha}`);
+    XLSX.writeFile(wb, `resumen-mesas-${fecha}.xlsx`);
 }
 </script>
 </body>
