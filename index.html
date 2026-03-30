@@ -410,11 +410,11 @@ function parsearDatos(filas) {
         if (!ind || ind.startsWith('---') || ind.startsWith('===') || ind === 'INDICADOR') return;
         datos[ind] = {
             ts:  fila[1] || '—',
-            tsab:'—',
-            def: fila[2] || '—',
-            cat: fila[3] || '—',
-            sal: fila[4] || '—',
-            tot: fila[5] || '',
+            tsab:fila[2] || '—',
+            def: fila[3] || '—',
+            cat: fila[4] || '—',
+            sal: fila[5] || '—',
+            tot: fila[6] || '',
             cant:fila[1] || '0',
         };
     });
@@ -527,7 +527,7 @@ function renderizarDatos(filas, fecha) {
 
     // estado de cada mesa
     const haTS   = gv('Total actas ingresadas','ts')   !== '—';
-    const haTSab = gv('Total actas ingresadas','tsab') !== '—';
+    const haTSab = gv('Total actas ingresadas','tsab') !== '—' && gv('Total actas ingresadas','tsab') !== '0';
     const haTMF  = !!datos['Actas ingresadas'];
     const haDef  = gv('Total actas ingresadas','def')  !== '—';
     const haCat  = gv('Total actas ingresadas','cat')  !== '—';
@@ -606,7 +606,7 @@ function renderizarDatos(filas, fecha) {
     });
 
     // ══ TRÁNSITO SÁBADO ══
-    const totalSab = (parseInt(gn('Con secuestro','tsab'))||0) + (parseInt(gn('Sin secuestro','tsab'))||0);
+    const totalSab = (parseInt(gn('Con secuestro TOTAL','tsab'))||0) + (parseInt(gn('Sin secuestro','tsab'))||0);
     html += renderMesaCard({
         id: 'transito-sabado',
         grad: 'linear-gradient(135deg,#1a5276,#0e3a5a)',
@@ -614,9 +614,11 @@ function renderizarDatos(filas, fecha) {
         cargado: haTSab,
         secciones: [
             { titulo: '📄 Actas', filas: [
-                { label:'Total actas',   val:String(totalSab),          dest:true },
-                { label:'Con secuestro', val:gn('Con secuestro','tsab') },
-                { label:'Sin secuestro', val:gn('Sin secuestro','tsab') },
+                { label:'Total actas',        val:String(totalSab),                       dest:true },
+                { label:'Por alcoholemia',    val:gn('Sec. por alcoholemia','tsab') },
+                { label:'Por otros motivos',  val:gn('Sec. por otros motivos','tsab') },
+                { label:'Con secuestro TOTAL',val:gn('Con secuestro TOTAL','tsab'),       dest:false },
+                { label:'Sin secuestro',      val:gn('Sin secuestro','tsab') },
             ]},
             { titulo: '🚗 Vehículos y Atención', filas: [
                 { label:'Vehículos liberados',   val:gn('Vehículos liberados','tsab'), dest:true },
