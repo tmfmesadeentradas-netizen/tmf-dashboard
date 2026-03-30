@@ -595,8 +595,8 @@ function renderizarDatos(filas, fecha) {
             ]},
             { titulo: '👥 Atención al Público', filas: [
                 { label:'Personas atendidas', val:gn('Personas atendidas','ts'), dest:true },
-                { label:'↳ Turno Mañana',     val:gn('  Turno Mañana','ts'),    sub:true },
-                { label:'↳ Turno Tarde',      val:gn('  Turno Tarde','ts'),     sub:true },
+                { label:'↳ Turno Mañana',     val:gn('Personas Mañana','ts'),    sub:true },
+                { label:'↳ Turno Tarde',      val:gn('Personas Tarde','ts'),     sub:true },
                 { label:'Consultas',          val:gn('Consultas','ts') },
             ]},
         ],
@@ -637,7 +637,7 @@ function renderizarDatos(filas, fecha) {
         { titulo:'📄 Actas',      items:[['Ingresadas','Actas ingresadas'],['Reasignadas','Actas reasignadas']] },
         { titulo:'📜 Libre Deuda',items:[['Automotor gen.','Libre deuda autom. gen.'],['Automotor ret.','Libre deuda autom. ret.'],['Catastro ret.','Libre deuda catastro ret.']] },
         { titulo:'💳 Cupones',    items:[['Generados','Cupones generados'],['Recibidos','Cupones recibidos'],['Manual','Cupones manual']] },
-        { titulo:'👥 Atención',   items:[['Personas atendidas','Personas atendidas'],['Consultas','Consultas'],['Mails OGV','Mails OGV']] },
+        { titulo:'👥 Atención',   items:[['Personas atendidas','TMF Personas atendidas'],['Consultas','TMF Consultas'],['Mails OGV','Mails OGV']] },
     ].forEach(b => {
         html += `<div class="tmf-bloque"><div class="tmf-bloque-titulo">${b.titulo}</div>`;
         b.items.forEach(([lbl,key]) => {
