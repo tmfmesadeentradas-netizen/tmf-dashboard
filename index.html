@@ -404,11 +404,11 @@ function parsearDatos(filas) {
         if (!ind || ind.startsWith('---') || ind.startsWith('===') || ind === 'INDICADOR') return;
         datos[ind] = {
             ts:  fila[1] || '—',
-            tsab:fila[2] || '—',
-            def: fila[3] || '—',
-            cat: fila[4] || '—',
-            sal: fila[5] || '—',
-            tot: fila[6] || '',
+            tsab:'—',
+            def: fila[2] || '—',
+            cat: fila[3] || '—',
+            sal: fila[4] || '—',
+            tot: fila[5] || '',
             cant:fila[1] || '0',
         };
     });
