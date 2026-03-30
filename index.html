@@ -187,6 +187,55 @@
         .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
         .alert-warning { background: #fef9e7; color: #9a7d0a; border-left: 4px solid var(--acento); }
 
+        /* MESA CARDS */
+        .mesa-card { margin-bottom: 12px; }
+        .mesa-header {
+            padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .mesa-header h2 { color: white; font-size: 17px; margin: 0; }
+        .mesa-header p  { font-size: 12px; opacity: 0.8; margin-top: 3px; color: white; }
+        .mesa-badge {
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; color: white;
+        }
+        .mesa-body { padding: 18px; }
+        .mesa-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px;
+        }
+        .mesa-bloque { background: var(--fondo); border-radius: 8px; padding: 14px; }
+        .mesa-bloque-titulo {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            margin-bottom: 10px; color: #555;
+        }
+        .mesa-fila {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 7px 0; border-bottom: 1px solid var(--borde); font-size: 13px;
+        }
+        .mesa-fila:last-child { border-bottom: none; }
+        .mesa-fila .lbl { color: var(--suave); }
+        .mesa-fila .lbl.sub { padding-left: 10px; font-size: 12px; }
+        .mesa-fila .num { font-size: 20px; font-weight: 700; color: var(--primario); }
+        .mesa-fila .num.sm { font-size: 16px; }
+        .mesa-fila .num.txt { font-size: 14px; font-weight: 600; }
+        .mesa-obs {
+            margin-top: 12px; padding: 10px 14px;
+            background: #fff3e0; border-radius: 6px; border-left: 3px solid var(--acento);
+            font-size: 13px; color: var(--texto);
+        }
+        .mesa-juzgados-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;
+            margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--borde);
+        }
+        .mesa-juz-box {
+            background: var(--fondo); border-radius: 8px;
+            padding: 12px; text-align: center;
+        }
+        .mesa-juz-titulo { font-size: 11px; font-weight: 700; color: var(--suave); margin-bottom: 8px; }
+        .mesa-juz-num { font-size: 26px; font-weight: 700; color: var(--primario); }
+        .mesa-juz-lbl { font-size: 11px; color: var(--suave); }
+        .mesa-sin-datos { padding: 14px 18px; }
+
         /* FOOTER */
         footer {
             text-align: center; padding: 16px 20px;
@@ -385,25 +434,107 @@ function vc(datos, key) {
     return datos[key]['cant'] || '0';
 }
 
+// ── Helper: render un bloque de sección dentro de una card ──
+function renderBloque(titulo, filas) {
+    let h = `<div class="mesa-bloque"><div class="mesa-bloque-titulo">${titulo}</div>`;
+    filas.forEach(f => {
+        const esSub  = f.sub  || false;
+        const esDest = f.dest || false;
+        h += `<div class="mesa-fila">
+            <span class="lbl${esSub ? ' sub' : ''}">${f.label}</span>
+            <span class="num${esDest ? '' : ' sm'}${f.texto ? ' txt' : ''}">${f.texto ? f.texto : (f.val || '0')}</span>
+        </div>`;
+    });
+    return h + '</div>';
+}
+
+// ── Helper: render card completa de una mesa ──
+function renderMesaCard(cfg) {
+    const cargado = cfg.cargado;
+    const badgeBg = cargado ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+    let h = `<div class="card mesa-card" id="${cfg.id}">
+        <div class="mesa-header" style="background:${cfg.grad};">
+            <div>
+                <h2>${cfg.icono} ${cfg.titulo}</h2>
+                <p>${cfg.subtitulo}</p>
+            </div>
+            <span class="mesa-badge" style="background:${badgeBg};">${cargado ? '✅ Con datos' : '⏳ Sin cargar'}</span>
+        </div>`;
+
+    if (cargado) {
+        h += `<div class="mesa-body"><div class="mesa-grid">`;
+        cfg.secciones.forEach(s => { h += renderBloque(s.titulo, s.filas); });
+        h += `</div>`;
+
+        // Juzgados simples
+        if (cfg.juzgados && cfg.juzgados.length) {
+            h += `<div class="mesa-juzgados-grid">`;
+            cfg.juzgados.forEach(j => {
+                h += `<div class="mesa-juz-box">
+                    <div class="mesa-juz-titulo">${j.label.toUpperCase()}</div>
+                    <div class="mesa-juz-num">${j.val}</div>
+                    <div class="mesa-juz-lbl">Actas</div>
+                </div>`;
+            });
+            h += `</div>`;
+        }
+
+        // Juzgados con ingresadas/reasignadas
+        if (cfg.juzgadosBi && cfg.juzgadosBi.length) {
+            h += `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--borde);">
+                <p style="font-size:11px;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:10px;">🏛️ Distribución por Juzgado</p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">`;
+            cfg.juzgadosBi.forEach(j => {
+                h += `<div class="juz-box">
+                    <div class="juz-titulo">${j.label.toUpperCase()}</div>
+                    <div class="juz-numeros">
+                        <div><div class="juz-num ing">${j.ing}</div><div class="juz-lbl">Ingresadas</div></div>
+                        <div class="juz-sep"></div>
+                        <div><div class="juz-num reas">${j.reas}</div><div class="juz-lbl">Reasignadas</div></div>
+                    </div>
+                </div>`;
+            });
+            h += `</div></div>`;
+        }
+
+        if (cfg.obs) {
+            h += `<div class="mesa-obs"><strong style="font-size:11px;text-transform:uppercase;color:var(--acento);">📝 Observaciones</strong><p style="margin-top:4px;">${cfg.obs}</p></div>`;
+        }
+        h += `</div>`;
+    } else {
+        h += `<div class="mesa-sin-datos"><div class="alert alert-warning">⏳ ${cfg.titulo} aún no cargó datos para esta fecha.</div></div>`;
+    }
+    return h + '</div>';
+}
+
 function renderizarDatos(filas, fecha) {
     const datos = parsearDatos(filas);
 
-    const estados = {
-        '🚗 Tránsito': datos['Total actas ingresadas']?.ts !== '—',
-        '🚔 Tr. Sábado': datos['Total actas ingresadas']?.tsab !== '—',
-        '📋 TMF':       datos['Actas ingresadas'] !== undefined,
-        '🛡️ Def. Civil':datos['Total actas ingresadas']?.def !== '—',
-        '🏠 Catastro':  datos['Total actas ingresadas']?.cat !== '—',
-        '🌿 Salud Amb.':datos['Total actas ingresadas']?.sal !== '—',
-    };
-    const colores = {
-        '🚗 Tránsito':   '--transito',
-        '🚔 Tr. Sábado': '--transito-sab',
-        '📋 TMF':        '--tmf',
-        '🛡️ Def. Civil': '--defensa',
-        '🏠 Catastro':   '--catastro',
-        '🌿 Salud Amb.': '--salud',
-    };
+    // helpers de valor
+    function gv(key, col) {
+        if (!datos[key]) return '—';
+        const x = datos[key][col];
+        return (!x || x === '—') ? '—' : x;
+    }
+    function gn(key, col) { const x = gv(key,col); return x === '—' ? '0' : x; }
+    function gt(key)       { return datos[key]?.cant || '0'; }
+
+    // estado de cada mesa
+    const haTS   = gv('Total actas ingresadas','ts')   !== '—';
+    const haTSab = gv('Total actas ingresadas','tsab') !== '—';
+    const haTMF  = !!datos['Actas ingresadas'];
+    const haDef  = gv('Total actas ingresadas','def')  !== '—';
+    const haCat  = gv('Total actas ingresadas','cat')  !== '—';
+    const haSal  = gv('Total actas ingresadas','sal')  !== '—';
+
+    const estadosMesas = [
+        ['🚗 Tránsito',   haTS,   '--transito',     '#transito-semana'],
+        ['🚔 Tr. Sábado', haTSab, '--transito-sab', '#transito-sabado'],
+        ['📋 TMF',        haTMF,  '--tmf',           '#mesa-tmf'],
+        ['🛡️ Def. Civil', haDef,  '--defensa',       '#defensa-civil'],
+        ['🏠 Catastro',   haCat,  '--catastro',      '#catastro'],
+        ['🌿 Salud Amb.', haSal,  '--salud',         '#salud-ambiental'],
+    ];
 
     let html = `
     <div class="fecha-bar">
@@ -428,178 +559,155 @@ function renderizarDatos(filas, fecha) {
 
     <div class="estado-mesas">`;
 
-    for (const [nombre, cargado] of Object.entries(estados)) {
-        const color = `var(${colores[nombre]})`;
-        html += `<div class="estado-chip" style="border-color:${cargado ? color : '#f39c12'};color:${cargado ? color : '#e67e22'}">
-            <div class="dot" style="background:${cargado ? color : '#f39c12'}"></div>
-            ${nombre}
-            <span style="font-size:11px;font-weight:400;color:${cargado ? '#666' : '#e67e22'}">${cargado ? 'Con datos' : 'Sin cargar'}</span>
-        </div>`;
-    }
-    html += `</div>
-
-    <div class="card">
-        <div class="card-header">🏛️ Mesas de Entrada — Comparativo del Día</div>
-        <div class="tabla-wrapper">
-        <table class="tabla-resumen" id="tabla-exportar">
-            <thead><tr>
-                <th class="col-label">Indicador</th>
-                <th class="th-ts">🚗 Tránsito Semana<br><small style="font-weight:400;opacity:0.85;">Lunes–Viernes</small></th>
-                <th class="th-tsab">🚔 Tránsito Sábado</th>
-                <th class="th-def">🛡️ Defensa Civil</th>
-                <th class="th-cat">🏠 Catastro</th>
-                <th class="th-sal">🌿 Salud Ambiental</th>
-            </tr></thead>
-            <tbody>
-
-            <tr class="sec-titulo sec-actas"><td colspan="6">📄 ACTAS</td></tr>
-            <tr>
-                <td class="col-label">Total actas ingresadas</td>
-                <td>${vg(datos,'Total actas ingresadas','ts')}</td>
-                <td>${vg(datos,'Total actas ingresadas','tsab')}</td>
-                <td>${vg(datos,'Total actas ingresadas','def')}</td>
-                <td>${vg(datos,'Total actas ingresadas','cat')}</td>
-                <td>${vg(datos,'Total actas ingresadas','sal')}</td>
-            </tr>
-            <tr>
-                <td class="col-label sub">↳ Turno Mañana</td>
-                <td>${v(datos,'Turno Mañana','ts')}</td>
-                <td class="sd">—</td><td colspan="3" class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label sub">↳ Turno Tarde</td>
-                <td>${v(datos,'Turno Tarde','ts')}</td>
-                <td class="sd">—</td><td colspan="3" class="sd">—</td>
-            </tr>
-
-            <tr class="sec-titulo sec-secuestros"><td colspan="6">🔒 SECUESTROS / CLAUSURAS</td></tr>
-            <tr>
-                <td class="col-label">Con secuestro</td>
-                <td>${vg(datos,'Con secuestro','ts')}</td>
-                <td>${v(datos,'Con secuestro','tsab')}</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label">Sin secuestro</td>
-                <td>${v(datos,'Sin secuestro','ts')}</td>
-                <td>${v(datos,'Sin secuestro','tsab')}</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label">Vehículos liberados</td>
-                <td class="sd">—</td>
-                <td>${v(datos,'Vehículos liberados','tsab')}</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label">Clausura / Decomiso</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-                <td>${v(datos,'Clausura / Decomiso','sal')}</td>
-            </tr>
-
-            <tr class="sec-titulo sec-atencion"><td colspan="6">👥 ATENCIÓN AL PÚBLICO</td></tr>
-            <tr>
-                <td class="col-label">Personas atendidas</td>
-                <td>${vg(datos,'Personas atendidas','ts')}</td>
-                <td>${v(datos,'Personas atendidas','tsab')}</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label sub">↳ Turno Mañana</td>
-                <td>${v(datos,'  Turno Mañana','ts')}</td>
-                <td class="sd">—</td><td colspan="3" class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label sub">↳ Turno Tarde</td>
-                <td>${v(datos,'  Turno Tarde','ts')}</td>
-                <td class="sd">—</td><td colspan="3" class="sd">—</td>
-            </tr>
-            <tr>
-                <td class="col-label">Consultas</td>
-                <td>${v(datos,'Consultas','ts')}</td>
-                <td class="sd">—</td><td class="sd">—</td>
-                <td>${v(datos,'Consultas','cat')}</td>
-                <td class="sd">—</td>
-            </tr>
-
-            <tr class="sec-titulo sec-sistemas"><td colspan="6">💻 SISTEMAS CIT / SAE</td></tr>
-            <tr>
-                <td class="col-label">Sistema CIT</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-                <td>${v(datos,'Sistema CIT','cat')}</td>
-                <td>${v(datos,'Sistema CIT','sal')}</td>
-            </tr>
-            <tr>
-                <td class="col-label">Sistema SAE</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-                <td>${v(datos,'Sistema SAE','cat')}</td>
-                <td>${v(datos,'Sistema SAE','sal')}</td>
-            </tr>
-            <tr>
-                <td class="col-label">Docs. digitalizados</td>
-                <td class="sd">—</td><td class="sd">—</td><td class="sd">—</td>
-                <td>${v(datos,'Docs digitalizados','cat')}</td>
-                <td class="sd">—</td>
-            </tr>
-
-            <tr class="sec-titulo sec-juzgados"><td colspan="6">🏛️ DISTRIBUCIÓN POR JUZGADO</td></tr>
-            ${['I','II','III','IV','V','VI','VII','VIII','IX'].map(j => `
-            <tr>
-                <td class="col-label sub">Juzgado ${j}</td>
-                <td>${v(datos,`Juzgado ${j}`,'ts')}</td>
-                <td class="sd">—</td>
-                <td>${v(datos,`Juzgado ${j}`,'def')}</td>
-                <td>${v(datos,`Juzgado ${j}`,'cat')}</td>
-                <td class="sd">—</td>
-            </tr>`).join('')}
-
-            </tbody>
-        </table>
-        </div>
-    </div>
-
-    <!-- TMF -->
-    <div class="card">
-        <div class="tmf-header">
-            <div>
-                <h2>📋 Mesa TMF</h2>
-                <p>Trámites · Libre Deuda · Cupones · Atención</p>
+    estadosMesas.forEach(([nombre, cargado, color, ancla]) => {
+        const c = `var(${color})`;
+        html += `<a href="${ancla}" style="text-decoration:none;">
+            <div class="estado-chip" style="background:${cargado ? c : '#fff3e0'};border-color:${cargado ? 'transparent' : '#f39c12'};color:${cargado ? 'white' : '#e67e22'};">
+                <div class="dot" style="background:${cargado ? 'rgba(255,255,255,0.6)' : '#f39c12'};"></div>
+                ${nombre}
+                <span style="font-size:11px;font-weight:400;color:${cargado ? 'rgba(255,255,255,0.8)' : '#e67e22'};">${cargado ? 'Con datos' : 'Sin cargar'}</span>
             </div>
+        </a>`;
+    });
+    html += '</div>';
+
+    // ══ TRÁNSITO SEMANA ══
+    html += renderMesaCard({
+        id: 'transito-semana',
+        grad: 'linear-gradient(135deg,#2e6da4,#1a5a90)',
+        icono: '🚗', titulo: 'Mesa Tránsito Semana', subtitulo: 'Lunes a Viernes · Turnos Mañana y Tarde',
+        cargado: haTS,
+        secciones: [
+            { titulo: '📄 Actas', filas: [
+                { label:'Total actas del día', val:gn('Total actas ingresadas','ts'), dest:true },
+                { label:'↳ Turno Mañana',     val:gn('Turno Mañana','ts'),           sub:true },
+                { label:'↳ Turno Tarde',      val:gn('Turno Tarde','ts'),            sub:true },
+            ]},
+            { titulo: '🔒 Secuestros', filas: [
+                { label:'Con secuestro', val:gn('Con secuestro','ts'), dest:true },
+                { label:'Sin secuestro', val:gn('Sin secuestro','ts') },
+            ]},
+            { titulo: '👥 Atención al Público', filas: [
+                { label:'Personas atendidas', val:gn('Personas atendidas','ts'), dest:true },
+                { label:'↳ Turno Mañana',     val:gn('  Turno Mañana','ts'),    sub:true },
+                { label:'↳ Turno Tarde',      val:gn('  Turno Tarde','ts'),     sub:true },
+                { label:'Consultas',          val:gn('Consultas','ts') },
+            ]},
+        ],
+        juzgados: ['II','IV','VI','IX'].map(j => ({ label:`Juzgado ${j}`, val:gn(`Juzgado ${j}`,'ts') })),
+    });
+
+    // ══ TRÁNSITO SÁBADO ══
+    const totalSab = (parseInt(gn('Con secuestro','tsab'))||0) + (parseInt(gn('Sin secuestro','tsab'))||0);
+    html += renderMesaCard({
+        id: 'transito-sabado',
+        grad: 'linear-gradient(135deg,#1a5276,#0e3a5a)',
+        icono: '🚔', titulo: 'Mesa Tránsito Sábado', subtitulo: 'Sábados · Turno único',
+        cargado: haTSab,
+        secciones: [
+            { titulo: '📄 Actas', filas: [
+                { label:'Total actas',   val:String(totalSab),          dest:true },
+                { label:'Con secuestro', val:gn('Con secuestro','tsab') },
+                { label:'Sin secuestro', val:gn('Sin secuestro','tsab') },
+            ]},
+            { titulo: '🚗 Vehículos y Atención', filas: [
+                { label:'Vehículos liberados',   val:gn('Vehículos liberados','tsab'), dest:true },
+                { label:'Infractores atendidos', val:gn('Personas atendidas','tsab') },
+            ]},
+        ],
+        juzgados: null,
+    });
+
+    // ══ MESA TMF ══
+    html += `<div class="card" id="mesa-tmf">
+        <div class="tmf-header">
+            <div><h2>📋 Mesa TMF</h2><p>Trámites · Libre Deuda · Cupones · Atención</p></div>
             <span style="background:rgba(255,255,255,0.2);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;">
-                ${datos['Actas ingresadas'] ? '✅ Con datos' : '⏳ Sin cargar'}
+                ${haTMF ? '✅ Con datos' : '⏳ Sin cargar'}
             </span>
         </div>
         <div class="tmf-grid">`;
-
-    const bloques = [
-        { titulo: '📄 Actas', items: [['Ingresadas','Actas ingresadas'],['Reasignadas','Actas reasignadas']] },
-        { titulo: '📜 Libre Deuda', items: [['Automotor gen.','Libre deuda autom. gen.'],['Automotor ret.','Libre deuda autom. ret.'],['Catastro ret.','Libre deuda catastro ret.']] },
-        { titulo: '💳 Cupones', items: [['Generados','Cupones generados'],['Recibidos','Cupones recibidos'],['Manual','Cupones manual']] },
-        { titulo: '👥 Atención', items: [['Personas atendidas','Personas atendidas'],['Consultas','Consultas'],['Mails OGV','Mails OGV']] },
-    ];
-
-    bloques.forEach(b => {
+    [
+        { titulo:'📄 Actas',      items:[['Ingresadas','Actas ingresadas'],['Reasignadas','Actas reasignadas']] },
+        { titulo:'📜 Libre Deuda',items:[['Automotor gen.','Libre deuda autom. gen.'],['Automotor ret.','Libre deuda autom. ret.'],['Catastro ret.','Libre deuda catastro ret.']] },
+        { titulo:'💳 Cupones',    items:[['Generados','Cupones generados'],['Recibidos','Cupones recibidos'],['Manual','Cupones manual']] },
+        { titulo:'👥 Atención',   items:[['Personas atendidas','Personas atendidas'],['Consultas','Consultas'],['Mails OGV','Mails OGV']] },
+    ].forEach(b => {
         html += `<div class="tmf-bloque"><div class="tmf-bloque-titulo">${b.titulo}</div>`;
         b.items.forEach(([lbl,key]) => {
-            html += `<div class="tmf-fila"><span class="lbl">${lbl}</span><span class="num">${vc(datos,key)}</span></div>`;
+            html += `<div class="tmf-fila"><span class="lbl">${lbl}</span><span class="num">${gt(key)}</span></div>`;
         });
-        html += `</div>`;
+        html += '</div>';
     });
-
     html += `</div><div class="tmf-juzgados">`;
     ['III','V','VIII'].forEach(j => {
         html += `<div class="juz-box">
             <div class="juz-titulo">JUZGADO ${j}</div>
             <div class="juz-numeros">
-                <div><div class="juz-num ing">${vc(datos,`Juzgado ${j} ingresadas`)}</div><div class="juz-lbl">Ingresadas</div></div>
+                <div><div class="juz-num ing">${gt(`Juzgado ${j} ingresadas`)}</div><div class="juz-lbl">Ingresadas</div></div>
                 <div class="juz-sep"></div>
-                <div><div class="juz-num reas">${vc(datos,`Juzgado ${j} reasignadas`)}</div><div class="juz-lbl">Reasignadas</div></div>
+                <div><div class="juz-num reas">${gt(`Juzgado ${j} reasignadas`)}</div><div class="juz-lbl">Reasignadas</div></div>
             </div>
         </div>`;
     });
+    html += '</div></div>';
 
-    html += `</div></div>
+    // ══ DEFENSA CIVIL ══
+    html += renderMesaCard({
+        id: 'defensa-civil',
+        grad: 'linear-gradient(135deg,#6c3483,#8e44ad)',
+        icono: '🛡️', titulo: 'Mesa Defensa Civil', subtitulo: 'Infracciones de Defensa Civil',
+        cargado: haDef,
+        secciones: [
+            { titulo: '📄 Actas', filas: [
+                { label:'Total actas ingresadas', val:gn('Total actas ingresadas','def'), dest:true },
+            ]},
+        ],
+        juzgados: ['III','V','VIII'].map(j => ({ label:`Juzgado ${j}`, val:gn(`Juzgado ${j}`,'def') })),
+    });
 
+    // ══ CATASTRO ══
+    html += renderMesaCard({
+        id: 'catastro',
+        grad: 'linear-gradient(135deg,#1a7a4a,#27ae60)',
+        icono: '🏠', titulo: 'Mesa Catastro', subtitulo: 'Infracciones y gestión catastral',
+        cargado: haCat,
+        secciones: [
+            { titulo: '📄 Actas', filas: [
+                { label:'Total actas ingresadas', val:gn('Total actas ingresadas','cat'), dest:true },
+            ]},
+            { titulo: '💻 Sistemas', filas: [
+                { label:'Sistema CIT',             val:gn('Sistema CIT','cat'), dest:true },
+                { label:'Sistema SAE',             val:gn('Sistema SAE','cat'), dest:true },
+                { label:'Docs digitalizados (SAE)',val:gn('Docs digitalizados','cat') },
+            ]},
+            { titulo: '👥 Atención', filas: [
+                { label:'Consultas atendidas', val:gn('Consultas','cat'), dest:true },
+            ]},
+        ],
+        juzgados: ['I','VII'].map(j => ({ label:`Juzgado ${j}`, val:gn(`Juzgado ${j}`,'cat') })),
+    });
+
+    // ══ SALUD AMBIENTAL ══
+    html += renderMesaCard({
+        id: 'salud-ambiental',
+        grad: 'linear-gradient(135deg,#1a8a6c,#16a085)',
+        icono: '🌿', titulo: 'Mesa Salud Ambiental', subtitulo: 'Infracciones ambientales y sanitarias',
+        cargado: haSal,
+        secciones: [
+            { titulo: '📄 Actas', filas: [
+                { label:'Actas ingresadas',    val:gn('Total actas ingresadas','sal'), dest:true },
+                { label:'Clausura / Decomiso', val:gn('Clausura / Decomiso','sal') },
+            ]},
+            { titulo: '💻 Sistemas', filas: [
+                { label:'Grabadas CIT', val:gn('Sistema CIT','sal'), dest:true },
+                { label:'Grabadas SAE', val:gn('Sistema SAE','sal'), dest:true },
+            ]},
+        ],
+        juzgados: null,
+    });
+
+    html += `
     <footer>
         ⚖️ Tribunal Municipal de Faltas · Municipalidad de San Miguel de Tucumán<br>
         Versión 1.0 · Lanzamiento Marzo 2026 · Desarrollado por <strong>David Díaz de la Vega</strong>
