@@ -394,7 +394,13 @@ function formatearFechaLegible(fecha) {
     return `${dias[f.getDay()]} ${f.getDate()} de ${meses[f.getMonth()]} de ${f.getFullYear()}`;
 }
 
-function hoy() { return new Date().toISOString().split('T')[0]; }
+function hoy() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+}
 
 // Col indices: A=0 Indicador, B=1 Tránsito Semana, C=2 Tránsito Sábado, D=3 Defensa, E=4 Catastro, F=5 Salud, G=6 Total
 function parsearDatos(filas) {
@@ -737,7 +743,7 @@ function mostrarSinDatos(fecha) {
 function cambiarFecha(dias) {
     const f = new Date(fechaActual + 'T12:00:00');
     f.setDate(f.getDate() + dias);
-    const nueva = f.toISOString().split('T')[0];
+    const y=f.getFullYear(),m=String(f.getMonth()+1).padStart(2,'0'),d=String(f.getDate()).padStart(2,'0'); const nueva=`${y}-${m}-${d}`;
     if (nueva <= hoy()) { fechaActual = nueva; cargarDatos(fechaActual); }
 }
 
