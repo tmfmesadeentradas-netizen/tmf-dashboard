@@ -590,8 +590,10 @@ function renderizarDatos(filas, fecha) {
                 { label:'↳ Turno Tarde',      val:gn('Turno Tarde','ts'),            sub:true },
             ]},
             { titulo: '🔒 Secuestros', filas: [
-                { label:'Con secuestro', val:gn('Con secuestro','ts'), dest:true },
-                { label:'Sin secuestro', val:gn('Sin secuestro','ts') },
+                { label:'Por alcoholemia',   val:gn('Sec. por alcoholemia','ts') },
+                { label:'Por otros motivos', val:gn('Sec. por otros motivos','ts') },
+                { label:'Con secuestro TOTAL', val:gn('Con secuestro TOTAL','ts'), dest:true },
+                { label:'Sin secuestro',     val:gn('Sin secuestro','ts') },
             ]},
             { titulo: '👥 Atención al Público', filas: [
                 { label:'Personas atendidas', val:gn('Personas atendidas','ts'), dest:true },
