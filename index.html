@@ -6,6 +6,7 @@
     <title>Resumen Diario – Tribunal de Faltas</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
             --primario:   #1a3a5c;
@@ -287,6 +288,100 @@
             .tmf-fila .num { font-size: 17px; }
             .juz-num { font-size: 20px; }
         }
+
+        /* ── SECCIÓN GRÁFICOS ── */
+        #seccion-graficos {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 3px solid var(--borde);
+            scroll-margin-top: 80px;
+        }
+        .graficos-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+        }
+        .graficos-titulo {
+            font-size: 20px; font-weight: 800; color: var(--primario);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-volver {
+            background: var(--fondo); border: 1.5px solid var(--borde);
+            color: var(--suave); padding: 6px 14px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-volver:hover { border-color: var(--secundario); color: var(--secundario); }
+        .periodo-bar {
+            background: white; border-radius: 10px; padding: 14px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px;
+            display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        }
+        .periodo-label {
+            font-size: 11px; font-weight: 700; color: var(--suave);
+            text-transform: uppercase; margin-right: 4px;
+        }
+        .btn-periodo {
+            padding: 6px 14px; border-radius: 20px; border: 2px solid var(--borde);
+            background: white; color: var(--texto); font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .btn-periodo:hover { border-color: var(--secundario); color: var(--secundario); }
+        .btn-periodo.activo { background: var(--primario); border-color: var(--primario); color: white; }
+        .periodo-sep { width: 1px; height: 24px; background: var(--borde); margin: 0 4px; }
+        .periodo-nav { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+        .periodo-nav input[type="date"] {
+            border: 1.5px solid var(--borde); border-radius: 6px;
+            padding: 5px 10px; font-size: 13px; font-weight: 600; color: var(--primario);
+        }
+        .periodo-nav-btn {
+            padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--borde);
+            background: white; cursor: pointer; font-size: 13px; font-weight: 600;
+            color: var(--texto);
+        }
+        .periodo-nav-btn:hover { border-color: var(--secundario); color: var(--secundario); }
+        .periodo-info {
+            font-size: 12px; color: var(--suave); padding: 4px 10px;
+            background: var(--fondo); border-radius: 6px;
+        }
+        .graficos-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 16px; margin-bottom: 16px;
+        }
+        .grafico-card {
+            background: white; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 20px; overflow: hidden;
+        }
+        .grafico-card.full { grid-column: span 2; }
+        .grafico-titulo {
+            font-size: 13px; font-weight: 700; color: var(--primario);
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .grafico-subtitulo { font-size: 11px; color: var(--suave); font-weight: 400; margin-left: 4px; }
+        .grafico-loading {
+            display: flex; align-items: center; justify-content: center;
+            height: 200px; color: var(--suave); font-size: 14px; gap: 8px;
+        }
+        .grafico-sin-datos {
+            display: flex; align-items: center; justify-content: center;
+            height: 160px; color: var(--suave); font-size: 13px;
+            background: var(--fondo); border-radius: 8px;
+        }
+        .stats-row {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
+            gap: 10px; margin-bottom: 16px;
+        }
+        .stat-chip {
+            background: var(--fondo); border-radius: 8px; padding: 12px 14px; text-align: center;
+        }
+        .stat-chip .num { font-size: 26px; font-weight: 800; color: var(--primario); }
+        .stat-chip .lbl { font-size: 11px; color: var(--suave); margin-top: 2px; }
+        @media (max-width: 640px) {
+            .graficos-grid { grid-template-columns: 1fr; }
+            .grafico-card.full { grid-column: span 1; }
+            .periodo-nav { margin-left: 0; width: 100%; }
+        }
+        @media print { #seccion-graficos { display: none; } }
     </style>
 </head>
 <body>
@@ -327,6 +422,74 @@
         <div id="loading"><div class="spinner"></div>Cargando datos...</div>
         <div id="contenido-datos" style="display:none;"></div>
     </div>
+
+    <!-- ══════════════════════════════════
+         SECCIÓN GRÁFICOS
+    ══════════════════════════════════ -->
+    <div id="seccion-graficos" style="display:none;">
+        <div class="graficos-header">
+            <div class="graficos-titulo">📈 Análisis por Período</div>
+            <a href="#" class="btn-volver" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">▲ Volver arriba</a>
+        </div>
+
+        <!-- Barra de período -->
+        <div class="periodo-bar">
+            <span class="periodo-label">Ver:</span>
+            <button class="btn-periodo" id="btn-p-dia"    onclick="setPeriodo('dia',1)">Hoy</button>
+            <button class="btn-periodo" id="btn-p-semana" onclick="setPeriodo('semana',1)">7 días</button>
+            <div class="periodo-sep"></div>
+            <button class="btn-periodo activo" id="btn-p-1m"  onclick="setPeriodo('mes',1)">1 mes</button>
+            <button class="btn-periodo" id="btn-p-3m"  onclick="setPeriodo('mes',3)">3 meses</button>
+            <button class="btn-periodo" id="btn-p-6m"  onclick="setPeriodo('mes',6)">6 meses</button>
+            <button class="btn-periodo" id="btn-p-12m" onclick="setPeriodo('mes',12)">12 meses</button>
+            <div class="periodo-nav">
+                <button class="periodo-nav-btn" onclick="navPeriodo(-1)">◀</button>
+                <input type="date" id="grf-fecha-fin" onchange="periodoActual.fechaFin=this.value;actualizarInfoPeriodo();cargarGraficos();">
+                <button class="periodo-nav-btn" onclick="navPeriodo(1)">▶</button>
+                <span class="periodo-info" id="grf-info-periodo"></span>
+            </div>
+        </div>
+
+        <!-- Stats resumen -->
+        <div class="stats-row">
+            <div class="stat-chip">
+                <div class="num" id="grf-stat-total">—</div>
+                <div class="lbl">Actas totales</div>
+            </div>
+            <div class="stat-chip">
+                <div class="num" id="grf-stat-dias">—</div>
+                <div class="lbl">Días con datos</div>
+            </div>
+            <div class="stat-chip">
+                <div class="num" id="grf-stat-prom">—</div>
+                <div class="lbl">Promedio diario</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="graficos-grid">
+            <div class="grafico-card">
+                <div class="grafico-titulo">📊 Actas por Mesa <span class="grafico-subtitulo">total del período</span></div>
+                <div id="grf-actas"><div class="grafico-loading">Presioná "Gráficos" para cargar</div></div>
+            </div>
+            <div class="grafico-card">
+                <div class="grafico-titulo">🏛️ Distribución por Juzgado <span class="grafico-subtitulo">todas las mesas</span></div>
+                <div id="grf-juzgados"><div class="grafico-loading">Presioná "Gráficos" para cargar</div></div>
+            </div>
+            <div class="grafico-card full">
+                <div class="grafico-titulo">🔒 Secuestros <span class="grafico-subtitulo">Tránsito Semana y Sábado · alcoholemia vs otros vs sin secuestro</span></div>
+                <div id="grf-secuestros"><div class="grafico-loading">Presioná "Gráficos" para cargar</div></div>
+            </div>
+            <div class="grafico-card full" style="height:340px;">
+                <div class="grafico-titulo">📈 Evolución de Actas <span class="grafico-subtitulo">por día en el período</span></div>
+                <div id="grf-evolucion" style="height:280px;"><div class="grafico-loading">Presioná "Gráficos" para cargar</div></div>
+            </div>
+        </div>
+
+        <div style="text-align:center;margin-top:8px;">
+            <a href="#" class="btn-volver" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">▲ Volver al resumen diario</a>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -361,6 +524,12 @@ function mostrarApp(usuario) {
     document.getElementById('pantalla-app').style.display = 'block';
     document.getElementById('user-name').textContent = usuario.nombre;
     document.getElementById('user-avatar').src = usuario.avatar;
+    // Mostrar sección gráficos (oculta hasta que carguen datos)
+    const sg = document.getElementById('seccion-graficos');
+    if (sg) sg.style.display = 'block';
+    // Inicializar fecha fin en selector
+    const gfin = document.getElementById('grf-fecha-fin');
+    if (gfin) gfin.value = hoy();
 }
 
 function cerrarSesion() {
@@ -561,6 +730,7 @@ function renderizarDatos(filas, fecha) {
         <button class="btn-exp imp" onclick="window.print()">🖨️ <span>Imprimir</span></button>
         <button class="btn-exp pdf" onclick="window.print()">📄 <span>PDF</span></button>
         <button class="btn-exp xls" onclick="exportarExcel('${fecha}')">📊 <span>Excel</span></button>
+        <button class="btn-exp" onclick="irAGraficos()" style="border-color:#6c3483;color:#6c3483;" onmouseover="this.style.background='#6c3483';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='#6c3483'">📈 <span>Gráficos</span></button>
     </div>
 
     <div class="estado-mesas">`;
@@ -753,6 +923,315 @@ function cambiarFecha(dias) {
 
 function cambiarFechaDirecta(fecha) {
     if (fecha <= hoy()) { fechaActual = fecha; cargarDatos(fechaActual); }
+}
+
+
+// ══════════════════════════════════════════════════════════
+// SECCIÓN GRÁFICOS
+// ══════════════════════════════════════════════════════════
+
+let graficosInstancias = {};
+let periodoActual = { tipo: 'mes', cantidad: 1, fechaFin: null };
+
+function irAGraficos() {
+    const sec = document.getElementById('seccion-graficos');
+    if (!sec) return;
+    sec.scrollIntoView({ behavior: 'smooth' });
+    if (!sec.dataset.iniciado) {
+        sec.dataset.iniciado = '1';
+        cargarGraficos();
+    }
+}
+
+function periodoFechas() {
+    const hoyStr = hoy();
+    let fin = periodoActual.fechaFin || hoyStr;
+    let inicio;
+    const f = new Date(fin + 'T12:00:00');
+
+    if (periodoActual.tipo === 'dia') {
+        inicio = fin;
+    } else if (periodoActual.tipo === 'semana') {
+        const ini = new Date(f);
+        ini.setDate(ini.getDate() - 6);
+        inicio = ini.toISOString().split('T')[0];
+    } else {
+        const ini = new Date(f);
+        ini.setMonth(ini.getMonth() - periodoActual.cantidad);
+        ini.setDate(ini.getDate() + 1);
+        inicio = ini.toISOString().split('T')[0];
+    }
+    return { inicio, fin };
+}
+
+function fechasEnPeriodo(inicio, fin) {
+    const fechas = [];
+    let cur = new Date(inicio + 'T12:00:00');
+    const end = new Date(fin + 'T12:00:00');
+    while (cur <= end) {
+        fechas.push(cur.toISOString().split('T')[0]);
+        cur.setDate(cur.getDate() + 1);
+    }
+    return fechas;
+}
+
+function nombrePeriodo() {
+    const { inicio, fin } = periodoFechas();
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const fi = new Date(inicio + 'T12:00:00');
+    const ff = new Date(fin + 'T12:00:00');
+    if (inicio === fin) return `${fi.getDate()} ${meses[fi.getMonth()]} ${fi.getFullYear()}`;
+    return `${fi.getDate()} ${meses[fi.getMonth()]} – ${ff.getDate()} ${meses[ff.getMonth()]} ${ff.getFullYear()}`;
+}
+
+function setPeriodo(tipo, cantidad) {
+    periodoActual = { tipo, cantidad, fechaFin: hoy() };
+    document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('activo'));
+    const id = tipo === 'mes' ? `btn-p-${cantidad}m` : `btn-p-${tipo}`;
+    const el = document.getElementById(id);
+    if (el) el.classList.add('activo');
+    document.getElementById('grf-fecha-fin').value = hoy();
+    actualizarInfoPeriodo();
+    cargarGraficos();
+}
+
+function navPeriodo(dir) {
+    const { inicio, fin } = periodoFechas();
+    const fi = new Date(fin + 'T12:00:00');
+    if (periodoActual.tipo === 'dia') {
+        fi.setDate(fi.getDate() + dir);
+    } else if (periodoActual.tipo === 'semana') {
+        fi.setDate(fi.getDate() + dir * 7);
+    } else {
+        fi.setMonth(fi.getMonth() + dir * periodoActual.cantidad);
+    }
+    if (fi > new Date()) fi.setTime(new Date().getTime());
+    const y = fi.getFullYear(), m = String(fi.getMonth()+1).padStart(2,'0'), d = String(fi.getDate()).padStart(2,'0');
+    periodoActual.fechaFin = `${y}-${m}-${d}`;
+    document.getElementById('grf-fecha-fin').value = periodoActual.fechaFin;
+    actualizarInfoPeriodo();
+    cargarGraficos();
+}
+
+function actualizarInfoPeriodo() {
+    const el = document.getElementById('grf-info-periodo');
+    if (el) el.textContent = nombrePeriodo();
+}
+
+async function obtenerDatosFecha(fecha) {
+    const nombreHoja = formatearFechaHoja(fecha);
+    try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(nombreHoja)}!A1:G100?key=${API_KEY}`;
+        const resp = await fetch(url);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (!data.values || data.values.length < 5) return null;
+        return parsearDatos(data.values);
+    } catch(e) { return null; }
+}
+
+function numVal(datos, key, col) {
+    if (!datos || !datos[key]) return 0;
+    const x = datos[key][col];
+    if (!x || x === '—') return 0;
+    return parseInt(x) || 0;
+}
+
+function numTMF(datos, key) {
+    if (!datos || !datos[key]) return 0;
+    return parseInt(datos[key].cant) || 0;
+}
+
+async function cargarGraficos() {
+    const { inicio, fin } = periodoFechas();
+    actualizarInfoPeriodo();
+
+    // Loading state
+    ['grf-actas','grf-juzgados','grf-secuestros','grf-evolucion'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="grafico-loading">⏳ Cargando...</div>';
+    });
+
+    const fechas = fechasEnPeriodo(inicio, fin);
+    // Fetch all in parallel (max 60 fechas para no sobrecargar)
+    const fechasAFetch = fechas.slice(-60);
+    const resultados = await Promise.all(fechasAFetch.map(f => obtenerDatosFecha(f)));
+
+    // Acumular totales
+    const totales = {
+        ts: 0, tsab: 0, tmf: 0, def: 0, cat: 0, sal: 0,
+        juz: { II:0, IV:0, VI:0, IX:0, III:0, V:0, VIII:0, I:0, VII:0 },
+        sec_alc_ts: 0, sec_otros_ts: 0, sin_sec_ts: 0,
+        sec_alc_sab: 0, sec_otros_sab: 0, sin_sec_sab: 0,
+        diasConDatos: 0
+    };
+
+    const evolucion = []; // por fecha
+
+    fechasAFetch.forEach((fecha, i) => {
+        const d = resultados[i];
+        if (!d) return;
+
+        const ts_actas  = numVal(d,'Total actas ingresadas','ts');
+        const sab_actas = numVal(d,'Total actas ingresadas','tsab');
+        const def_actas = numVal(d,'Total actas ingresadas','def');
+        const cat_actas = numVal(d,'Total actas ingresadas','cat');
+        const sal_actas = numVal(d,'Total actas ingresadas','sal');
+        const tmf_actas = numTMF(d,'Actas ingresadas');
+
+        if (ts_actas + sab_actas + def_actas + cat_actas + sal_actas + tmf_actas === 0) return;
+
+        totales.ts   += ts_actas;
+        totales.tsab += sab_actas;
+        totales.tmf  += tmf_actas;
+        totales.def  += def_actas;
+        totales.cat  += cat_actas;
+        totales.sal  += sal_actas;
+        totales.diasConDatos++;
+
+        // Juzgados
+        ['II','IV','VI','IX'].forEach(j => { totales.juz[j] += numVal(d,`Juzgado ${j}`,'ts'); });
+        ['III','V','VIII'].forEach(j => { totales.juz[j] += numVal(d,`Juzgado ${j}`,'def'); });
+        totales.juz['I']   += numVal(d,'Juzgado I','cat');
+        totales.juz['VII'] += numVal(d,'Juzgado VII','cat');
+
+        // Secuestros Tránsito Semana
+        totales.sec_alc_ts   += numVal(d,'Sec. por alcoholemia','ts');
+        totales.sec_otros_ts += numVal(d,'Sec. por otros motivos','ts');
+        totales.sin_sec_ts   += numVal(d,'Sin secuestro','ts');
+
+        // Secuestros Tránsito Sábado
+        totales.sec_alc_sab   += numVal(d,'Sec. por alcoholemia','tsab');
+        totales.sec_otros_sab += numVal(d,'Sec. por otros motivos','tsab');
+        totales.sin_sec_sab   += numVal(d,'Sin secuestro','tsab');
+
+        evolucion.push({ fecha, ts: ts_actas, tmf: tmf_actas, def: def_actas, cat: cat_actas, sal: sal_actas });
+    });
+
+    renderGraficoActas(totales);
+    renderGraficoJuzgados(totales);
+    renderGraficoSecuestros(totales);
+    renderGraficoEvolucion(evolucion);
+
+    // Stats resumen
+    const totalGeneral = totales.ts + totales.tsab + totales.tmf + totales.def + totales.cat + totales.sal;
+    document.getElementById('grf-stat-total').textContent = totalGeneral;
+    document.getElementById('grf-stat-dias').textContent  = totales.diasConDatos;
+    document.getElementById('grf-stat-prom').textContent  = totales.diasConDatos > 0 ? Math.round(totalGeneral / totales.diasConDatos) : 0;
+}
+
+function destruirGrafico(id) {
+    if (graficosInstancias[id]) { graficosInstancias[id].destroy(); delete graficosInstancias[id]; }
+}
+
+function renderGraficoActas(t) {
+    const cont = document.getElementById('grf-actas');
+    const total = t.ts + t.tsab + t.tmf + t.def + t.cat + t.sal;
+    if (total === 0) { cont.innerHTML = '<div class="grafico-sin-datos">Sin datos para el período</div>'; return; }
+    cont.innerHTML = '<canvas id="canvas-actas"></canvas>';
+    destruirGrafico('actas');
+    graficosInstancias['actas'] = new Chart(document.getElementById('canvas-actas'), {
+        type: 'bar',
+        data: {
+            labels: ['Tránsito Sem.','Tránsito Sáb.','TMF','Def. Civil','Catastro','Salud Amb.'],
+            datasets: [{
+                label: 'Actas recibidas',
+                data: [t.ts, t.tsab, t.tmf, t.def, t.cat, t.sal],
+                backgroundColor: ['#2e6da4','#1a5276','#b7360e','#6c3483','#1a7a4a','#1a8a6c'],
+                borderRadius: 6, borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false }, tooltip: { callbacks: {
+                label: ctx => ` ${ctx.parsed.y} actas (${Math.round(ctx.parsed.y/total*100)}%)`
+            }}},
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderGraficoJuzgados(t) {
+    const cont = document.getElementById('grf-juzgados');
+    const vals = [t.juz.I, t.juz.II, t.juz.III, t.juz.IV, t.juz.V, t.juz.VI, t.juz.VII, t.juz.VIII, t.juz.IX];
+    const total = vals.reduce((a,b) => a+b, 0);
+    if (total === 0) { cont.innerHTML = '<div class="grafico-sin-datos">Sin datos de juzgados</div>'; return; }
+    cont.innerHTML = '<canvas id="canvas-juzgados"></canvas>';
+    destruirGrafico('juzgados');
+    graficosInstancias['juzgados'] = new Chart(document.getElementById('canvas-juzgados'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Juzgado I','Juzgado II','Juzgado III','Juzgado IV','Juzgado V','Juzgado VI','Juzgado VII','Juzgado VIII','Juzgado IX'],
+            datasets: [{
+                data: vals,
+                backgroundColor: ['#1a3a5c','#2e6da4','#6c3483','#1a7a4a','#b7360e','#1a5276','#16a085','#e67e22','#c0392b'],
+                borderWidth: 2, borderColor: 'white',
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 10 } },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/total*100)}%)` }} }
+        }
+    });
+}
+
+function renderGraficoSecuestros(t) {
+    const cont = document.getElementById('grf-secuestros');
+    const totalSec = t.sec_alc_ts + t.sec_otros_ts + t.sin_sec_ts + t.sec_alc_sab + t.sec_otros_sab + t.sin_sec_sab;
+    if (totalSec === 0) { cont.innerHTML = '<div class="grafico-sin-datos">Sin datos de secuestros</div>'; return; }
+    cont.innerHTML = '<canvas id="canvas-secuestros"></canvas>';
+    destruirGrafico('secuestros');
+    graficosInstancias['secuestros'] = new Chart(document.getElementById('canvas-secuestros'), {
+        type: 'bar',
+        data: {
+            labels: ['Alcoholemia','Otros motivos','Sin secuestro'],
+            datasets: [
+                { label: 'Tránsito Semana', data: [t.sec_alc_ts, t.sec_otros_ts, t.sin_sec_ts],
+                  backgroundColor: '#2e6da4', borderRadius: 4 },
+                { label: 'Tránsito Sábado', data: [t.sec_alc_sab, t.sec_otros_sab, t.sin_sec_sab],
+                  backgroundColor: '#1a5276', borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { position: 'top' } },
+            scales: { x: { stacked: false }, y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+}
+
+function renderGraficoEvolucion(evolucion) {
+    const cont = document.getElementById('grf-evolucion');
+    if (evolucion.length === 0) { cont.innerHTML = '<div class="grafico-sin-datos">Sin datos para mostrar evolución</div>'; return; }
+    cont.innerHTML = '<canvas id="canvas-evolucion"></canvas>';
+    destruirGrafico('evolucion');
+
+    // Agrupar por semana si hay muchos días
+    let datos = evolucion;
+    let labels = datos.map(d => {
+        const f = new Date(d.fecha + 'T12:00:00');
+        return `${f.getDate()}/${f.getMonth()+1}`;
+    });
+
+    graficosInstancias['evolucion'] = new Chart(document.getElementById('canvas-evolucion'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Tránsito Sem.', data: datos.map(d=>d.ts),  borderColor:'#2e6da4', backgroundColor:'#2e6da420', tension:0.3, fill:true, pointRadius:3 },
+                { label: 'TMF',           data: datos.map(d=>d.tmf), borderColor:'#b7360e', backgroundColor:'#b7360e20', tension:0.3, fill:false, pointRadius:3 },
+                { label: 'Def. Civil',    data: datos.map(d=>d.def), borderColor:'#6c3483', backgroundColor:'#6c348320', tension:0.3, fill:false, pointRadius:3 },
+                { label: 'Catastro',      data: datos.map(d=>d.cat), borderColor:'#1a7a4a', backgroundColor:'#1a7a4a20', tension:0.3, fill:false, pointRadius:3 },
+                { label: 'Salud Amb.',    data: datos.map(d=>d.sal), borderColor:'#1a8a6c', backgroundColor:'#1a8a6c20', tension:0.3, fill:false, pointRadius:3 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
 }
 
 function exportarExcel(fecha) {
