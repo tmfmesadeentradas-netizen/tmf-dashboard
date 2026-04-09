@@ -7,6 +7,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
     <style>
         :root {
             --primario:   #1a3a5c;
@@ -1158,21 +1159,42 @@ function renderGraficoJuzgados(t) {
     if (total === 0) { cont.innerHTML = '<div class="grafico-sin-datos">Sin datos de juzgados</div>'; return; }
     cont.innerHTML = '<canvas id="canvas-juzgados"></canvas>';
     destruirGrafico('juzgados');
+    // Filtrar juzgados sin datos para no mostrar etiquetas vacías
+    const labels9 = ['Juzgado I','Juzgado II','Juzgado III','Juzgado IV','Juzgado V','Juzgado VI','Juzgado VII','Juzgado VIII','Juzgado IX'];
+    const colors9 = ['#1a3a5c','#2e6da4','#6c3483','#1a7a4a','#b7360e','#1a5276','#16a085','#e67e22','#c0392b'];
+    const labelsF = [], valsF = [], colorsF = [];
+    vals.forEach((v,i) => { if (v > 0) { labelsF.push(labels9[i]); valsF.push(v); colorsF.push(colors9[i]); } });
+
     graficosInstancias['juzgados'] = new Chart(document.getElementById('canvas-juzgados'), {
-        type: 'doughnut',
+        type: 'pie',
         data: {
-            labels: ['Juzgado I','Juzgado II','Juzgado III','Juzgado IV','Juzgado V','Juzgado VI','Juzgado VII','Juzgado VIII','Juzgado IX'],
+            labels: labelsF,
             datasets: [{
-                data: vals,
-                backgroundColor: ['#1a3a5c','#2e6da4','#6c3483','#1a7a4a','#b7360e','#1a5276','#16a085','#e67e22','#c0392b'],
+                data: valsF,
+                backgroundColor: colorsF,
                 borderWidth: 2, borderColor: 'white',
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: true,
-            plugins: { legend: { position: 'right', labels: { font: { size: 12 }, padding: 10 } },
-                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/total*100)}%)` }} }
-        }
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/total*100)}%)` } },
+                datalabels: {
+                    color: 'white',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (value, ctx) => {
+                        const pct = Math.round(value / total * 100);
+                        if (pct < 4) return '';
+                        const label = ctx.chart.data.labels[ctx.dataIndex];
+                        const num = label.replace('Juzgado ','Juzg. ');
+                        return `${num}\n${value} (${pct}%)`;
+                    },
+                    textAlign: 'center',
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
     });
 }
 
