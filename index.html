@@ -843,6 +843,13 @@ function renderizarDatos(filas, fecha) {
             { titulo: '📄 Actas', filas: [
                 { label:'Total actas ingresadas', val:gn('Total actas ingresadas','def'), dest:true },
             ]},
+            { titulo: '⚖️ Clausura y Documentos', filas: [
+                { label:'Clausura',                  val:gn('Clausura','def') },
+                { label:'Docs digitalizados (SAE)',   val:gn('Docs digitalizados','def') },
+            ]},
+            { titulo: '👥 Atención', filas: [
+                { label:'Consultas atendidas', val:gn('Consultas','def'), dest:true },
+            ]},
         ],
         juzgados: ['III','V','VIII'].map(j => ({ label:`Juzgado ${j}`, val:gn(`Juzgado ${j}`,'def') })),
     });
@@ -857,10 +864,9 @@ function renderizarDatos(filas, fecha) {
             { titulo: '📄 Actas', filas: [
                 { label:'Total actas ingresadas', val:gn('Total actas ingresadas','cat'), dest:true },
             ]},
-            { titulo: '💻 Sistemas', filas: [
-                { label:'Sistema CIT',             val:gn('Sistema CIT','cat'), dest:true },
-                { label:'Sistema SAE',             val:gn('Sistema SAE','cat'), dest:true },
-                { label:'Docs digitalizados (SAE)',val:gn('Docs digitalizados','cat') },
+            { titulo: '⚖️ Clausura y Documentos', filas: [
+                { label:'Clausura',                  val:gn('Clausura','cat') },
+                { label:'Docs digitalizados (SAE)',   val:gn('Docs digitalizados','cat') },
             ]},
             { titulo: '👥 Atención', filas: [
                 { label:'Consultas atendidas', val:gn('Consultas','cat'), dest:true },
@@ -876,16 +882,16 @@ function renderizarDatos(filas, fecha) {
         icono: '🌿', titulo: 'Mesa Salud Ambiental', subtitulo: 'Infracciones ambientales y sanitarias',
         cargado: haSal,
         secciones: [
-            { titulo: '📄 Actas', filas: [
-                { label:'Actas ingresadas',    val:gn('Total actas ingresadas','sal'), dest:true },
-                { label:'Clausura / Decomiso', val:gn('Clausura / Decomiso','sal') },
+            { titulo: '📄 Actas e Infracciones', filas: [
+                { label:'Actas ingresadas', val:gn('Total actas ingresadas','sal'), dest:true },
+                { label:'Clausura',         val:gn('Clausura','sal') },
+                { label:'Decomiso',         val:gn('Decomiso','sal') },
             ]},
-            { titulo: '💻 Sistemas', filas: [
-                { label:'Grabadas CIT', val:gn('Sistema CIT','sal'), dest:true },
-                { label:'Grabadas SAE', val:gn('Sistema SAE','sal'), dest:true },
+            { titulo: '📄 Documentos', filas: [
+                { label:'Docs digitalizados (SAE)', val:gn('Docs digitalizados','sal') },
             ]},
         ],
-        juzgados: null,
+        juzgados: [{ label:'Juzgado X', val:gn('Juzgado X','sal') }],
     });
 
     html += `
