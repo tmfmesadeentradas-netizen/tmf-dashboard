@@ -493,11 +493,13 @@
     </div>
 </div>
 
+    <div id="seccion-bot" style="padding: 20px 30px;"></div>
 <script>
 const GOOGLE_CLIENT_ID = '1083295097277-qb6ug0psqmkof8filklhv4rifdphiitg.apps.googleusercontent.com';
 const SPREADSHEET_ID   = '1HoHYklZlysMh77WybuZc_28QyczXrfq923J2JxfYtZc';
 const API_KEY          = 'AIzaSyATf67anKIAFp8WRohpyb9vsIpe3-0jFIo';
 const EMAILS_PERMITIDOS = [];
+const SPREADSHEET_ID_BOT = '195ZJMo-oYJED_lT5Ia0aR40zc4iBgQ2h74zT2MXzK6E';
 
 let fechaActual = hoy();
 
@@ -505,7 +507,7 @@ window.onload = function() {
     google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: manejarLogin, auto_select: false });
     google.accounts.id.renderButton(document.getElementById('google-btn'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'es', width: 300 });
     const sesion = sessionStorage.getItem('tmf_user');
-    if (sesion) { const u = JSON.parse(sesion); mostrarApp(u); cargarDatos(fechaActual); }
+    if (sesion) { const u = JSON.parse(sesion); mostrarApp(u); cargarDatos(fechaActual); cargarDatosBot(); }
 };
 
 function manejarLogin(response) {
@@ -563,7 +565,56 @@ function formatearFechaLegible(fecha) {
     const f = new Date(fecha + 'T12:00:00');
     return `${dias[f.getDay()]} ${f.getDate()} de ${meses[f.getMonth()]} de ${f.getFullYear()}`;
 }
+async function cargarDatosBot() {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_BOT}/values/Hoja%201!A:I?key=${API_KEY}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const filas = data.values || [];
+    if (filas.length <= 1) return;
 
+    const resueltos = filas.slice(1).filter(f => f[5] === 'RESUELTO');
+    const actas = resueltos.filter(f => f[2] === 'ACTA').length;
+    const dominios = resueltos.filter(f => f[2] === 'CONSULTA_DOMINIO').length;
+    const descargos = resueltos.filter(f => f[2] === 'DESCARGO').length;
+    const otras = resueltos.filter(f => f[2] === 'OTRA_CONSULTA').length;
+    const tiempos = resueltos.filter(f => f[8]).map(f => parseInt(f[8]));
+    const promedio = tiempos.length ? Math.round(tiempos.reduce((a,b) => a+b, 0) / tiempos.length) : 0;
+
+    const contenedor = document.getElementById('seccion-bot');
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+      <div style="background:#1a3a5c;color:white;padding:15px 20px;border-radius:8px;margin-bottom:15px;">
+        <h3 style="margin:0 0 15px 0;font-size:16px;">📱 Bot WhatsApp — Miguelito</h3>
+        <div style="display:flex;gap:15px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
+            <div style="font-size:28px;font-weight:bold;">${resueltos.length}</div>
+            <div style="font-size:11px;opacity:0.8;">Total resueltos</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
+            <div style="font-size:28px;font-weight:bold;">${actas}</div>
+            <div style="font-size:11px;opacity:0.8;">Actas</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
+            <div style="font-size:28px;font-weight:bold;">${dominios}</div>
+            <div style="font-size:11px;opacity:0.8;">Consultas dominio</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
+            <div style="font-size:28px;font-weight:bold;">${descargos}</div>
+            <div style="font-size:11px;opacity:0.8;">Descargos</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
+            <div style="font-size:28px;font-weight:bold;">${promedio} min</div>
+            <div style="font-size:11px;opacity:0.8;">Tiempo promedio</div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    console.error('Error cargando datos bot:', e);
+  }
+}
 function hoy() {
     const d = new Date();
     const y = d.getFullYear();
