@@ -567,50 +567,141 @@ function formatearFechaLegible(fecha) {
 }
 async function cargarDatosBot() {
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_BOT}/values/Hoja%201!A:I?key=${API_KEY}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_BOT}/values/Hoja%201!A:J?key=${API_KEY}`;
     const resp = await fetch(url);
     const data = await resp.json();
     const filas = data.values || [];
-    if (filas.length <= 1) return;
-
-    const resueltos = filas.slice(1).filter(f => f[5] === 'RESUELTO');
-    const actas = resueltos.filter(f => f[2] === 'ACTA').length;
-    const dominios = resueltos.filter(f => f[2] === 'CONSULTA_DOMINIO').length;
-    const descargos = resueltos.filter(f => f[2] === 'DESCARGO').length;
-    const otras = resueltos.filter(f => f[2] === 'OTRA_CONSULTA').length;
-    const tiempos = resueltos.filter(f => f[8]).map(f => parseInt(f[8]));
-    const promedio = tiempos.length ? Math.round(tiempos.reduce((a,b) => a+b, 0) / tiempos.length) : 0;
-
     const contenedor = document.getElementById('seccion-bot');
     if (!contenedor) return;
+    if (filas.length <= 1) {
+      contenedor.innerHTML = `<div style="background:#1a3a5c;color:white;padding:15px 20px;border-radius:8px;margin-bottom:15px;"><h3 style="margin:0;font-size:16px;">📱 Bot WhatsApp — Miguelito</h3><p style="margin:10px 0 0 0;opacity:0.7;font-size:13px;">Sin datos registrados aún.</p></div>`;
+      return;
+    }
 
-    contenedor.innerHTML = `
-      <div style="background:#1a3a5c;color:white;padding:15px 20px;border-radius:8px;margin-bottom:15px;">
-        <h3 style="margin:0 0 15px 0;font-size:16px;">📱 Bot WhatsApp — Miguelito</h3>
-        <div style="display:flex;gap:15px;flex-wrap:wrap;">
-          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
-            <div style="font-size:28px;font-weight:bold;">${resueltos.length}</div>
-            <div style="font-size:11px;opacity:0.8;">Total resueltos</div>
+    const encabezados = filas[0];
+    const datos = filas.slice(1);
+
+    function parsearFecha(str) {
+      if (!str) return null;
+      const d = new Date(str.replace(' ', 'T') + '-03:00');
+      return isNaN(d) ? null : d;
+    }
+
+    function filtrarPorPeriodo(filas, dias) {
+      if (!dias) return filas;
+      const limite = new Date();
+      limite.setDate(limite.getDate() - dias);
+      return filas.filter(f => {
+        const d = parsearFecha(f[6]);
+        return d && d >= limite;
+      });
+    }
+
+    function calcularStats(filas) {
+      const resueltos = filas.filter(f => f[5] === 'RESUELTO');
+      const actas = resueltos.filter(f => f[2] === 'ACTA').length;
+      const dominios = resueltos.filter(f => f[2] === 'CONSULTA_DOMINIO').length;
+      const descargos = resueltos.filter(f => f[2] === 'DESCARGO').length;
+      const otras = resueltos.filter(f => f[2] === 'OTRA_CONSULTA').length;
+      const tiempos = resueltos.filter(f => f[8] && !isNaN(parseInt(f[8]))).map(f => parseInt(f[8]));
+      const promedio = tiempos.length ? Math.round(tiempos.reduce((a,b) => a+b, 0) / tiempos.length) : 0;
+      return { total: filas.length, resueltos: resueltos.length, actas, dominios, descargos, otras, promedio };
+    }
+
+    function graficoTorta(id, valores, etiquetas, colores) {
+      const total = valores.reduce((a,b) => a+b, 0);
+      if (total === 0) return `<div style="text-align:center;color:rgba(255,255,255,0.5);font-size:12px;padding:20px;">Sin datos</div>`;
+      let angulo = 0;
+      let paths = '';
+      let leyenda = '';
+      valores.forEach((v, i) => {
+        if (v === 0) return;
+        const porcentaje = v / total;
+        const rad1 = angulo * Math.PI * 2;
+        const rad2 = (angulo + porcentaje) * Math.PI * 2;
+        const x1 = 50 + 40 * Math.sin(rad1);
+        const y1 = 50 - 40 * Math.cos(rad1);
+        const x2 = 50 + 40 * Math.sin(rad2);
+        const y2 = 50 - 40 * Math.cos(rad2);
+        const grande = porcentaje > 0.5 ? 1 : 0;
+        paths += `<path d="M50,50 L${x1},${y1} A40,40 0 ${grande},1 ${x2},${y2} Z" fill="${colores[i]}" opacity="0.9"/>`;
+        leyenda += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px;"><div style="width:10px;height:10px;border-radius:2px;background:${colores[i]};flex-shrink:0;"></div><span>${etiquetas[i]}: ${v} (${Math.round(porcentaje*100)}%)</span></div>`;
+        angulo += porcentaje;
+      });
+      return `<div style="display:flex;align-items:center;gap:15px;"><svg viewBox="0 0 100 100" width="80" height="80">${paths}</svg><div>${leyenda}</div></div>`;
+    }
+
+    window._botDatos = datos;
+    window._botPeriodo = window._botPeriodo || null;
+
+    function renderBot(periodo) {
+      window._botPeriodo = periodo;
+      const filtrado = filtrarPorPeriodo(datos, periodo);
+      const s = calcularStats(filtrado);
+
+      const botones = [
+        { label: 'Hoy', dias: 1 },
+        { label: '7 días', dias: 7 },
+        { label: '1 mes', dias: 30 },
+        { label: '3 meses', dias: 90 },
+        { label: '6 meses', dias: 180 },
+        { label: '12 meses', dias: 365 },
+        { label: 'Todo', dias: null }
+      ].map(b => `<button onclick="window._renderBot(${b.dias})" style="padding:5px 12px;border:1px solid rgba(255,255,255,0.4);background:${periodo===b.dias?'rgba(255,255,255,0.25)':'transparent'};color:white;border-radius:20px;cursor:pointer;font-size:11px;">${b.label}</button>`).join('');
+
+      const torta = graficoTorta('bot-torta',
+        [s.actas, s.dominios, s.descargos, s.otras],
+        ['Actas', 'Consultas dominio', 'Descargos', 'Otras'],
+        ['#3498db', '#2ecc71', '#f39c12', '#9b59b6']
+      );
+
+      contenedor.innerHTML = `
+        <div style="background:#1a3a5c;color:white;padding:20px;border-radius:8px;margin-bottom:15px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
+            <h3 style="margin:0;font-size:16px;">📱 Bot WhatsApp — Miguelito</h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">${botones}</div>
           </div>
-          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
-            <div style="font-size:28px;font-weight:bold;">${actas}</div>
-            <div style="font-size:11px;opacity:0.8;">Actas</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            <div style="background:rgba(255,255,255,0.1);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.total}</div>
+              <div style="font-size:11px;opacity:0.8;">Total consultas</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.1);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.resueltos}</div>
+              <div style="font-size:11px;opacity:0.8;">Resueltas</div>
+            </div>
+            <div style="background:rgba(52,152,219,0.3);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.actas}</div>
+              <div style="font-size:11px;opacity:0.8;">Actas</div>
+            </div>
+            <div style="background:rgba(46,204,113,0.3);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.dominios}</div>
+              <div style="font-size:11px;opacity:0.8;">Consultas dominio</div>
+            </div>
+            <div style="background:rgba(243,156,18,0.3);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.descargos}</div>
+              <div style="font-size:11px;opacity:0.8;">Descargos</div>
+            </div>
+            <div style="background:rgba(155,89,182,0.3);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.otras}</div>
+              <div style="font-size:11px;opacity:0.8;">Otras consultas</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.1);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.promedio} min</div>
+              <div style="font-size:11px;opacity:0.8;">Tiempo promedio</div>
+            </div>
           </div>
-          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
-            <div style="font-size:28px;font-weight:bold;">${dominios}</div>
-            <div style="font-size:11px;opacity:0.8;">Consultas dominio</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
-            <div style="font-size:28px;font-weight:bold;">${descargos}</div>
-            <div style="font-size:11px;opacity:0.8;">Descargos</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.1);padding:12px 20px;border-radius:6px;text-align:center;">
-            <div style="font-size:28px;font-weight:bold;">${promedio} min</div>
-            <div style="font-size:11px;opacity:0.8;">Tiempo promedio</div>
+          <div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:6px;">
+            <div style="font-size:12px;opacity:0.7;margin-bottom:10px;">Distribución por tipo de gestión</div>
+            ${torta}
           </div>
         </div>
-      </div>
-    `;
+      `;
+    }
+
+    window._renderBot = renderBot;
+    renderBot(window._botPeriodo);
+
   } catch(e) {
     console.error('Error cargando datos bot:', e);
   }
