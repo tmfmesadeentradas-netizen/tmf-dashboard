@@ -567,7 +567,7 @@ function formatearFechaLegible(fecha) {
 }
 async function cargarDatosBot() {
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_BOT}/values/Hoja%201!A:J?key=${API_KEY}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_BOT}/values/Hoja%201!A:K?key=${API_KEY}`;
     const resp = await fetch(url);
     const data = await resp.json();
     const filas = data.values || [];
@@ -605,7 +605,8 @@ async function cargarDatosBot() {
       const otras = resueltos.filter(f => f[2] === 'OTRA_CONSULTA').length;
       const tiempos = resueltos.filter(f => f[8] && !isNaN(parseInt(f[8]))).map(f => parseInt(f[8]));
       const promedio = tiempos.length ? Math.round(tiempos.reduce((a,b) => a+b, 0) / tiempos.length) : 0;
-      return { total: filas.length, resueltos: resueltos.length, actas, dominios, descargos, otras, promedio };
+      const cupones = resueltos.filter(f => f[10] === '1').length;
+return { total: filas.length, resueltos: resueltos.length, actas, dominios, descargos, otras, promedio, cupones };
     }
 
     function graficoTorta(id, valores, etiquetas, colores) {
@@ -689,6 +690,10 @@ async function cargarDatosBot() {
             <div style="background:rgba(255,255,255,0.1);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
               <div style="font-size:26px;font-weight:bold;">${s.promedio} min</div>
               <div style="font-size:11px;opacity:0.8;">Tiempo promedio</div>
+            </div>
+            <div style="background:rgba(142,68,173,0.3);padding:12px 18px;border-radius:6px;text-align:center;min-width:90px;">
+              <div style="font-size:26px;font-weight:bold;">${s.cupones}</div>
+              <div style="font-size:11px;opacity:0.8;">Cupones emitidos</div>
             </div>
           </div>
           <div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:6px;">
